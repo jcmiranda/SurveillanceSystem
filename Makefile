@@ -3,9 +3,10 @@ OBJ = BackgroundCapturer.o
 CFLAGS = -I/opt/local/include/ -Wall -c
 LFLAGS = -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc
 
-all: 
-	$(CC) $(CFLAGS) BackgroundCapturer.cpp -o BackgroundCapturer.o
-	$(CC) $(LFLAGS) -o All BackgroundCapturer.o 
+all:
+	$(CC) $(CFLAGS) BackgroundSingleCapturer.cpp -o BackgroundSingleCapturer.o
+	$(CC) $(CFLAGS) SurveillanceSystem.cpp -o SurveillanceSystem.o
+	$(CC) $(LFLAGS) -o All SurveillanceSystem.o BackgroundSingleCapturer.o
 
 clean:
 	rm -rf $(OBJ) All 
