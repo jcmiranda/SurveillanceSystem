@@ -1,5 +1,5 @@
 CC = g++
-OBJ = BackgroundCapturer.o
+OBJ = BackgroundCapturer.o BackgroundSingleCapturer.o SurveillanceSystem.o
 CFLAGS = -I/opt/local/include/ -Wall -c
 LFLAGS = -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc
 
