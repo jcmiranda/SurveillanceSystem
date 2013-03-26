@@ -31,9 +31,11 @@ int main(int argc, char** argv) {
 	// Filename for saving current background
 	std::string bgd_filename = "background.jpg";
 
+	// Intialize background capturing option
 	BackgroundSingleCapturer backgroundSingleCapturer(bgd_filename,
 			&video_cap, &bgd_frame, &mutex_bgd);
 
+	// Start thread for capturing background
 	pthread_t background_capture_thread;
 	if(pthread_create(&background_capture_thread, 
 				NULL, 
@@ -42,12 +44,14 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
-	
+
+	// Join thread for capturing background	
 	if(pthread_join(background_capture_thread, NULL)) {
 		perror("Could not join background capture thread");
 		return -1;
 	}
 
+	// Destroy mutex for background
 	if(pthread_mutex_destroy(&mutex_bgd) != 0) {
 		perror("Failed to destroy background mutex");
 		return -1;
