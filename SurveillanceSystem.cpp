@@ -3,6 +3,9 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
+const static int FRAME_HEIGHT = 480;
+const static int FRAME_WIDTH = 720;
+
 void* capture_background(void* arg) {
 	BackgroundSingleCapturer backgroundSingleCapturer =
 		*((BackgroundSingleCapturer*) arg);
@@ -17,9 +20,13 @@ int main(int argc, char** argv) {
 	
 	// Capture default webcam feed
 	cv::VideoCapture video_cap(0);
+	if(!(video_cap.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH) &
+				video_cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT))) {
+		perror("Can not set frame width and height");
+	}
 
 	// Background frame
-	cv::Mat bgd_frame;
+	cv::Mat bgd_frame(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
 	
 	// Mutex for editing background frame
 	pthread_mutex_t mutex_bgd;
@@ -48,11 +55,30 @@ int main(int argc, char** argv) {
 	// Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 	for(;;) {
-		cv::Mat frame;
+		cv::Mat cur_frame;
+		cv::Mat frame_and_bgd(FRAME_HEIGHT, 2*FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+
+		int return_val = pthread_mutex_trylock(&mutex_bgd);
+		video_cap >> cur_frame; // Get a new frame from camera
+		cvtColor(cur_frame, cur_frame, CV_BGR2GRAY);
+		if(return_val != 0) {
+			hconcat(cur_frame, 
+					cv::Mat(FRAME_HEIGHT, 
+						FRAME_WIDTH, 
+						CV_8UC1, 
+						cv::Scalar(0)), 
+					frame_and_bgd);
+		} else {
+			hconcat(cur_frame, bgd_frame, frame_and_bgd);
+			return_val = pthread_mutex_unlock(&mutex_bgd);
+			if(return_val != 0) {
+				std::cout << "Failed unlocking bgd" << std::endl;
+			}	
+		}
+
 		// TODO: is this interfering with similar line in background
 		// single capture?
-		video_cap >> frame; // Get a new frame from camera
-		cv::imshow("livefeed", frame);
+		cv::imshow("livefeed", frame_and_bgd);
 		if(cv::waitKey(30) >= 0) break;
 	}
 

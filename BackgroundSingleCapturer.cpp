@@ -25,11 +25,13 @@ bool BackgroundSingleCapturer::runInThread() {
 	ssize_t linelen;
 	linelen = getline(&line, &linecap, stdin);
 
+	std::cout << "Acquiring lock on bgd in single capture" << std::endl;
 	if(pthread_mutex_lock(_mutex_bgd) != 0) {
 		perror("Can not acquire lock on background");
 		return false;
 	}
-
+	
+	std::cout << "Capturing frame in single capture" << std::endl;
 	*(_cap) >> *_bgd;
 	cvtColor(*_bgd, *_bgd, CV_BGR2GRAY);
 	if(!imwrite(_bgd_filename, *_bgd)) {
@@ -40,6 +42,7 @@ bool BackgroundSingleCapturer::runInThread() {
 		return false;
 	}
 	
+	std::cout << "Unlocking mutex in single capture" << std::endl;
 	if(pthread_mutex_unlock(_mutex_bgd) != 0) {
 		perror("Can not unlock on background");
 		return false;
