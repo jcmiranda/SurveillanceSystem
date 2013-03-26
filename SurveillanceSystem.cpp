@@ -45,6 +45,17 @@ int main(int argc, char** argv) {
 		return  -1;
 	}
 
+	// Display live video feed window
+	cv::namedWindow("livefeed", 1);	
+	for(;;) {
+		cv::Mat frame;
+		// TODO: is this interfering with similar line in background
+		// single capture?
+		video_cap >> frame; // Get a new frame from camera
+		cv::imshow("livefeed", frame);
+		if(cv::waitKey(30) >= 0) break;
+	}
+
 	// Join thread for capturing background	
 	if(pthread_join(background_capture_thread, NULL)) {
 		perror("Could not join background capture thread");
