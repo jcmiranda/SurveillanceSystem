@@ -25,14 +25,26 @@ bool BackgroundSingleCapturer::runInThread() {
 	ssize_t linelen;
 	linelen = getline(&line, &linecap, stdin);
 
-	Mat frame;
-	// Get a new frame from camera
-	*(_cap) >> frame;
-	cvtColor(frame, frame, CV_BGR2GRAY);
-	if(!imwrite(_bgd_filename,frame)) {
-		perror("Unable to write background to file.");
+	if(pthread_mutex_lock(_mutex_bgd) != 0) {
+		perror("Can not acquire lock on background");
 		return false;
 	}
+
+	*(_cap) >> *_bgd;
+	cvtColor(*_bgd, *_bgd, CV_BGR2GRAY);
+	if(!imwrite(_bgd_filename, *_bgd)) {
+		perror("Unable to write background to file.");
+		if(pthread_mutex_unlock(_mutex_bgd) != 0) {
+			perror("Failed to unlock mutex after image write fail");
+		}
+		return false;
+	}
+	
+	if(pthread_mutex_unlock(_mutex_bgd) != 0) {
+		perror("Can not unlock on background");
+		return false;
+	}
+	
 	return true;
 }
 
