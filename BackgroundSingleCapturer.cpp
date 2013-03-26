@@ -1,22 +1,22 @@
 #include "BackgroundSingleCapturer.h"
-#include <string>
-#include <opencv2/opencv.hpp>
+
 #include <iostream>
 	
 // http://docs.opencv.org/modules/highgui/doc/reading_and_writing_images_and_video.html#videocapture	
 
 using namespace cv;
 
-BackgroundSingleCapturer::BackgroundSingleCapturer(const std::string &filename) : 
-	_filename(filename) {
-	VideoCapture cap(0);
-	_cap = cap;
+BackgroundSingleCapturer::BackgroundSingleCapturer(const std::string &bgd_filename,
+		cv::VideoCapture* cap, cv::Mat* bgd, pthread_mutex_t* mutex_bgd) : 
+	_bgd_filename(bgd_filename),
+	_bgd(bgd),
+	_mutex_bgd(mutex_bgd),
+	_cap(cap) {
 }
 
-bool BackgroundSingleCapturer::captureBackground() {
+bool BackgroundSingleCapturer::runInThread() {
 	// Check if camera is open
-	if(!_cap.isOpened()) return false;
-
+	if(!_cap->isOpened()) return false;
 
 	std::cout << "Press enter to capture background frame." << std::endl;	
 	// Capture frame on keyboard input
@@ -25,13 +25,14 @@ bool BackgroundSingleCapturer::captureBackground() {
 	ssize_t linelen;
 	linelen = getline(&line, &linecap, stdin);
 
-	Mat edges;
 	Mat frame;
 	// Get a new frame from camera
-	_cap >> frame;
-	cvtColor(frame, edges, CV_BGR2GRAY);
-	// Camera will be deinitialized automatically in VideoCapture destructor
-	std::cout << "Writing background file." << std::endl;	
-	return imwrite(_filename, edges);
+	*(_cap) >> frame;
+	cvtColor(frame, frame, CV_BGR2GRAY);
+	if(!imwrite(_bgd_filename,frame)) {
+		perror("Unable to write background to file.");
+		return false;
+	}
+	return true;
 }
 

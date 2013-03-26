@@ -2,16 +2,19 @@
 #define BACKGROUNDSINGLECAPTURER_H
 
 #include "BackgroundCapturer.h"
-#include <string>
-#include <opencv2/opencv.hpp>
 
 class BackgroundSingleCapturer : public BackgroundCapturer {
 public:
-	BackgroundSingleCapturer(const std::string &filename);
-	virtual bool captureBackground();
-private:
-	const std::string _filename;
-	cv::VideoCapture _cap;
+	BackgroundSingleCapturer(const std::string &bgd_filename,
+			cv::VideoCapture* cap, 
+			cv::Mat* bgd, 
+			pthread_mutex_t* mutex_bgd);
+	virtual bool runInThread();
+protected:
+	const std::string _bgd_filename;
+	cv::Mat* _bgd;
+	pthread_mutex_t* _mutex_bgd;
+	cv::VideoCapture* _cap;
 };
 
 #endif
