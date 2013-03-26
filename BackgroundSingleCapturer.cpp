@@ -11,32 +11,25 @@ BackgroundSingleCapturer::BackgroundSingleCapturer(const std::string &filename) 
 	_filename(filename) {
 	VideoCapture cap(0);
 	_cap = cap;
-	// _cap = new cv::VideoCapture(0);
 }
 
 bool BackgroundSingleCapturer::captureBackground() {
-	// std::cout << "Before opening video capture" << std::endl;
-	// Open the default camera
-	// VideoCapture cap(0);
-    // std::cout << "after initializing video capture" << std::endl;	
-	// Check if we succeeded
+	// Check if camera is open
 	if(!_cap.isOpened()) return false;
-	
-	std::cout << "After opening video capture" << std::endl;
+
+
+	std::cout << "Press enter to capture background frame." << std::endl;	
+	// Capture frame on keyboard input
+	char* line = NULL;
+	size_t linecap = 0;
+	ssize_t linelen;
+	linelen = getline(&line, &linecap, stdin);
 
 	Mat edges;
-	// namedWindow("edges", 1);
-	
-	// Capture last frame
-	// for(;;) {
-		Mat frame;
-		// Get a new frame from camera
-		_cap >> frame;
-		cvtColor(frame, edges, CV_BGR2GRAY);
-		// imshow("edges", edges);
-		// if(waitKey(30) >= 0) break;
-	//}
-	
+	Mat frame;
+	// Get a new frame from camera
+	_cap >> frame;
+	cvtColor(frame, edges, CV_BGR2GRAY);
 	// Camera will be deinitialized automatically in VideoCapture destructor
 	std::cout << "Writing background file." << std::endl;	
 	return imwrite(_filename, edges);
