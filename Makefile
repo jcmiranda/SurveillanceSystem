@@ -1,12 +1,16 @@
 CC = g++
-OBJ = BackgroundCapturer.o BackgroundSingleCapturer.o SurveillanceSystem.o
+OBJ = BackgroundSingleCapturer.o SurveillanceSystem.o
 CFLAGS = -I/opt/local/include/ -Wall -c
 LFLAGS = -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video
 
-all:
-	$(CC) $(CFLAGS) BackgroundSingleCapturer.cpp -o BackgroundSingleCapturer.o
-	$(CC) $(CFLAGS) SurveillanceSystem.cpp -o SurveillanceSystem.o
-	$(CC) $(LFLAGS) -o All SurveillanceSystem.o BackgroundSingleCapturer.o
+all: $(OBJ)
+	$(CC) $(LFLAGS) -o main $(OBJ)
+
+BackgroundSingleCapturer.o: BackgroundSingleCapturer.cpp BackgroundSingleCapturer.h BackgroundCapturer.h
+	$(CC) $(CFLAGS) -o $@ $<
+
+SurveillanceSystem.o: SurveillanceSystem.cpp 
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf $(OBJ) All 
+	rm -rf $(OBJ) main 

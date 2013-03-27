@@ -54,11 +54,8 @@ int main(int argc, char** argv) {
 		return  -1;
 	}
 
-	cv::Mat mhi(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
 	cv::Mat silhouette(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
-	cv::Mat segmask(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
-	double timestamp = (double) clock() / CLOCKS_PER_SEC;
-	double duration = 30;
+
 	// Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 	for(;;) {
@@ -69,7 +66,6 @@ int main(int argc, char** argv) {
 		video_cap >> cur_frame; // Get a new frame from camera
 		cvtColor(cur_frame, cur_frame, CV_BGR2GRAY);
 		
-		timestamp = (double) clock() / CLOCKS_PER_SEC; 
 		
 		if(return_val != 0) {
 			hconcat(cur_frame, 
@@ -80,27 +76,12 @@ int main(int argc, char** argv) {
 					frame_and_bgd);
 		} else {
 			cv::Mat frame_diff;
-			frame_diff = cur_frame - bgd_frame;
-			double threshold_value = 5;
-			cv::threshold(frame_diff, silhouette, threshold_value, 255, 0);
-			hconcat(silhouette.mul(cur_frame), bgd_frame, frame_and_bgd);
+			frame_diff = cv::abs(cur_frame - bgd_frame);
+
+			double threshold_value = 30;
+			cv::threshold(frame_diff, silhouette, threshold_value, 255, 3);
+			hconcat(silhouette, bgd_frame, frame_and_bgd);
 			
-			// std::vector<cv::Rect> boundingRects(sizeof(cv::Rect));
-			// double segThresh = 40;
-			// cv::segmentMotion(mhi, segmask, boundingRects, timestamp, segThresh); 
-			// cv::updateMotionHistory(silhouette, mhi, timestamp, duration);
-		
-		/* Code for bounding rects is giving entire image	
-			for (size_t i = 0; i < boundingRects.size(); i++) {
-				cv::Rect this_rect = boundingRects[i];
-				cv::rectangle(cur_color_frame, 
-						cv::Point(this_rect.x, this_rect.y),
-						cv::Point(this_rect.x + this_rect.width, 
-							this_rect.y + this_rect.height),
-						cv::Scalar(0, 255, 255),
-						5, 
-						8);	
-			}*/
 			
 			return_val = pthread_mutex_unlock(&mutex_bgd);
 			if(return_val != 0) {
@@ -126,3 +107,30 @@ int main(int argc, char** argv) {
 
 	return 0;	
 }
+
+// Motion history code for motionSegment and updateMotionHistory
+#if 0
+	cv::Mat mhi(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
+	cv::Mat segmask(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
+	double timestamp = (double) clock() / CLOCKS_PER_SEC;
+	double duration = 30;
+	
+	timestamp = (double) clock() / CLOCKS_PER_SEC; 
+	std::vector<cv::Rect> boundingRects(sizeof(cv::Rect));
+	double segThresh = 40;
+	cv::segmentMotion(mhi, segmask, boundingRects, timestamp, segThresh); 
+	cv::updateMotionHistory(silhouette, mhi, timestamp, duration);
+
+	// Code for bounding rects is giving entire image	
+	for (size_t i = 0; i < boundingRects.size(); i++) {
+		cv::Rect this_rect = boundingRects[i];
+		cv::rectangle(cur_color_frame, 
+				cv::Point(this_rect.x, this_rect.y),
+				cv::Point(this_rect.x + this_rect.width, 
+					this_rect.y + this_rect.height),
+				cv::Scalar(0, 255, 255),
+				5, 
+				8);	
+	}
+
+#endif
