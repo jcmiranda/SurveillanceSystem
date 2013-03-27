@@ -8,10 +8,7 @@ using namespace cv;
 
 BackgroundSingleCapturer::BackgroundSingleCapturer(const std::string &bgd_filename,
 		cv::VideoCapture* cap, cv::Mat* bgd, pthread_mutex_t* mutex_bgd) : 
-	_bgd_filename(bgd_filename),
-	_bgd(bgd),
-	_mutex_bgd(mutex_bgd),
-	_cap(cap) {
+	BackgroundCapturer(bgd_filename, cap, bgd, mutex_bgd) {
 }
 
 bool BackgroundSingleCapturer::runInThread() {

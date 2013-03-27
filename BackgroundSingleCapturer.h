@@ -10,11 +10,6 @@ public:
 			cv::Mat* bgd, 
 			pthread_mutex_t* mutex_bgd);
 	virtual bool runInThread();
-protected:
-	const std::string _bgd_filename;
-	cv::Mat* _bgd;
-	pthread_mutex_t* _mutex_bgd;
-	cv::VideoCapture* _cap;
 };
 
 #endif

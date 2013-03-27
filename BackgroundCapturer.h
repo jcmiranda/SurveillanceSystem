@@ -7,6 +7,10 @@
 
 class BackgroundCapturer {
 public:
+	BackgroundCapturer(const std::string &bgd_filename,
+			cv::VideoCapture* cap, 
+			cv::Mat* bgd, 
+			pthread_mutex_t* mutex_bgd);
 	virtual bool runInThread() = 0;
 protected:
 	const std::string _bgd_filename;
