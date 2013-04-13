@@ -7,6 +7,9 @@
 
 const static int FRAME_HEIGHT = 240;
 const static int FRAME_WIDTH = 360;
+const static int FRAME_BUFLEN = 25;
+static int cur_frame_i = 0;
+std::vector<cv::Mat> frame_buffer(sizeof(cv::Mat));
 
 void* capture_background(void* arg) {
 	BackgroundSingleCapturer backgroundSingleCapturer =
@@ -37,12 +40,28 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
+	pthread_mutex_t mutex_bgd_r_frame_i;
+	if(pthread_mutex_init(&mutex_bgd_r_frame_i, NULL) != 0) {
+		perror("Failed to initialize background r frame i mutex");
+		return -1;
+	}
+	
+    pthread_mutex_t mutex_motion_r_frame_i;
+	if(pthread_mutex_init(&mutex_motion_r_frame_i, NULL) != 0) {
+		perror("Failed to initialize motion analysis r frame i mutex");
+		return -1;
+	}
+
 	// Filename for saving current background
 	std::string bgd_filename = "background.jpg";
 
 	// Intialize background capturing option
 	BackgroundSingleCapturer backgroundSingleCapturer(bgd_filename,
-			&video_cap, &bgd_frame, &mutex_bgd);
+			&frame_buffer, &bgd_frame, &mutex_bgd, &mutex_bgd_r_frame_i);
+
+    // Initialize motion analysis
+    MotionAnalyzerSquares motionAnalyzerSquares(&frame_buffer, &bgd_frame,
+        &mutex_bgd, &mutex_motion_r_frame_i);
 
 	// Start thread for capturing background
 	pthread_t background_capture_thread;
@@ -59,16 +78,16 @@ int main(int argc, char** argv) {
 	// Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 	for(;;) {
-		cv::Mat cur_frame;
+		// cv::Mat cur_frame;
 		cv::Mat frame_and_bgd(FRAME_HEIGHT, 2*FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
 
 		int return_val = pthread_mutex_trylock(&mutex_bgd);
-		video_cap >> cur_frame; // Get a new frame from camera
-		cvtColor(cur_frame, cur_frame, CV_BGR2GRAY);
 		
+		video_cap >> frame_buffer[cur_frame_i]; 
+		cvtColor(frame_buffer[cur_frame_i], frame_buffer[cur_frame_i], CV_BGR2GRAY);
 		
 		if(return_val != 0) {
-			hconcat(cur_frame, 
+			hconcat(frame_buffer[cur_frame_i], 
 					cv::Mat(FRAME_HEIGHT, 
 						FRAME_WIDTH, 
 						CV_8UC1, 
@@ -76,18 +95,21 @@ int main(int argc, char** argv) {
 					frame_and_bgd);
 		} else {
 			cv::Mat frame_diff;
-			frame_diff = cv::abs(cur_frame - bgd_frame);
+			frame_diff = cv::abs(frame_buffer[cur_frame_i]- bgd_frame);
 
 			double threshold_value = 30;
 			cv::threshold(frame_diff, silhouette, threshold_value, 255, 3);
 			hconcat(silhouette, bgd_frame, frame_and_bgd);
-			
 			
 			return_val = pthread_mutex_unlock(&mutex_bgd);
 			if(return_val != 0) {
 				std::cout << "Failed unlocking bgd" << std::endl;
 			}	
 		}
+		
+		backgroundSingleCapturer.setRFrameI(cur_frame_i);	
+        motionAnalyzerSquares.setRFrameI(cur_frame_i);
+		cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;	
 
 		cv::imshow("livefeed", frame_and_bgd);
 		if(cv::waitKey(30) >= 0) break;

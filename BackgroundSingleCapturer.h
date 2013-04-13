@@ -6,10 +6,15 @@
 class BackgroundSingleCapturer : public BackgroundCapturer {
 public:
 	BackgroundSingleCapturer(const std::string &bgd_filename,
-			cv::VideoCapture* cap, 
+			std::vector<cv::Mat>* frame_buffer,
 			cv::Mat* bgd, 
-			pthread_mutex_t* mutex_bgd);
+			pthread_mutex_t* mutex_bgd,
+			pthread_mutex_t* mutex_r_frame_i);
+	bool setRFrameI(int r_frame_i);
+	int getRFrameI(); // May be unneeded
 	virtual bool runInThread();
+private:
+	int _r_frame_i;
 };
 
 #endif
