@@ -30,15 +30,22 @@ bool BgdCapturerSingle::runInThread() {
         }
 
         // New frame available
-        // TODO: process new frame, rather than just incrementing
         if(difftime(frame_1.timestamp, // end
                     frame_2.timestamp)
                 > 0) { // beg
             inc_cur_frame = true;
             ctr = (ctr + 1) % STEP;
             if (ctr == 0) {
-                // _bgd = cv::Mat(frame_1.frame);
+                if(pthread_rwlock_wrlock(&_bgd_lock) != 0) {
+                    perror("could not obtain bgd write lock to update");
+                } 
+                
                 std::cout << "Capturing new bgd" << std::endl;
+
+                _bgd = cv::Mat(frame_1.frame);
+                if(pthread_rwlock_unlock(&_bgd_lock) != 0) {
+                    perror("could not release write lock to update");
+                } 
             }
         }
 
