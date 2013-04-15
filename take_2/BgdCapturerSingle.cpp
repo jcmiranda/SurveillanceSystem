@@ -26,6 +26,17 @@ bool BgdCapturerSingle::getBgd(cv::Mat* bgd_dest) {
 
 // Set the bgd to the frame provided as an argument
 bool BgdCapturerSingle::setBgd(const cv::Mat& bgd) {
+    if(pthread_rwlock_wrlock(&_bgd_lock) != 0) {
+        perror("could not obtain bgd write lock to set bgd");
+        return false;
+    } 
+    
     bgd.copyTo(_bgd);
+    
+    if(pthread_rwlock_unlock(&_bgd_lock) != 0) {
+        perror("could not release write lock to set bgd");
+        return false;
+    } 
+   
     return true;
 }
