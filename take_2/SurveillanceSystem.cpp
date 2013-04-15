@@ -24,7 +24,9 @@ int main(int argc, char** argv) {
 				video_cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT))) {
 		perror("Can not set frame width and height");
 	}
-  
+
+   // Return code for initializing rwlocks 
+   int rc = 0; 
    // Initialize frame buffer 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
         video_frame_buffer[i].frame = 
@@ -33,7 +35,9 @@ int main(int argc, char** argv) {
         pthread_rwlock_t* rw_lock = 
             (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
         // TODO: check attr for initialization
-        pthread_rwlock_init(rw_lock, NULL);
+        if( (rc = pthread_rwlock_init(rw_lock, NULL)) != 0) {
+            perror("rwlock initialization failed.");
+        }
       video_frame_buffer[i].rw_lock = rw_lock; 
     } 
 	
