@@ -24,11 +24,12 @@ bool BgdCapturerSingle::runInThread() {
             return false;
         }
 
+        // New frame available
+        // TODO: process new frame, rather than just incrementing
         if(difftime(frame_1.timestamp, // end
                     frame_2.timestamp)
                 > 0) { // beg
             inc_cur_frame = true;
-            std::cout << "inc" << std::endl;
         }
 
         if( (rc1 = pthread_rwlock_unlock(frame_1.rw_lock)) > 0) {
@@ -41,9 +42,9 @@ bool BgdCapturerSingle::runInThread() {
             return false;
         }
 
-       if (inc_cur_frame) {
-           _cur_frame_i++;
-       }
+        if (inc_cur_frame) {
+            _cur_frame_i++;
+        }
     }
 
     return false;

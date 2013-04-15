@@ -8,7 +8,7 @@
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
-const static int FRAME_WIDTH = 360;
+const static int FRAME_WIDTH = 370;
 
 // Length of video frame buffer
 const static int FRAME_BUFLEN = 100;
@@ -53,7 +53,8 @@ int main(int argc, char** argv) {
     } 
     
     // Intialize background capturing option
-	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer);
+	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer, 
+            FRAME_WIDTH, FRAME_HEIGHT);
 	
     // Start thread for capturing background
 	pthread_t background_capture_thread;
@@ -97,6 +98,7 @@ int main(int argc, char** argv) {
     } 
  
    // TODO: notify background capture thread that it should end
+   // TODO: add join for background capture thread
    // TODO: memory cleanup for rwlocks 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
         pthread_rwlock_destroy(video_frame_buffer[i].rw_lock);
