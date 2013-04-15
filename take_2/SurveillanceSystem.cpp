@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "video_frame.h"
+#include "BgdCapturerSingle.h"
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
@@ -16,6 +17,16 @@ const static int FRAME_BUFLEN = 100;
 static int cur_frame_i = 0;
 static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
+void* capture_background(void* arg) {
+	BgdCapturerSingle bgdCapturerSingle =
+		*((BgdCapturerSingle*) arg);
+	if(!bgdCapturerSingle.runInThread()) {
+		perror("Error capturing background");
+		return NULL;
+	}
+	return NULL;	
+}
+
 int main(int argc, char** argv) {
     // Capture default webcam feed
     cv::VideoCapture video_cap(0);
@@ -24,7 +35,7 @@ int main(int argc, char** argv) {
 				video_cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT))) {
 		perror("Can not set frame width and height");
 	}
-
+	
    // Return code for initializing rwlocks 
    int rc = 0; 
    // Initialize frame buffer 
@@ -40,6 +51,20 @@ int main(int argc, char** argv) {
         }
       video_frame_buffer[i].rw_lock = rw_lock; 
     } 
+    
+    // Intialize background capturing option
+	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer);
+	
+    // Start thread for capturing background
+	pthread_t background_capture_thread;
+	if(pthread_create(&background_capture_thread, 
+				NULL, 
+				&capture_background, 
+				&bgdCapturerSingle)) {
+		perror("Could not create thread to capture background.");
+		return  -1;
+	}
+
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
@@ -70,8 +95,9 @@ int main(int argc, char** argv) {
 
         if(cv::waitKey(30) >= 0) break;
     } 
-  
-   // TOOD: memory cleanup for rwlocks 
+ 
+   // TODO: notify background capture thread that it should end
+   // TODO: memory cleanup for rwlocks 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
         pthread_rwlock_destroy(video_frame_buffer[i].rw_lock);
         free(video_frame_buffer[i].rw_lock);

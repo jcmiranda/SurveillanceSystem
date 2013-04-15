@@ -14,12 +14,14 @@ bool BgdCapturerSingle::runInThread() {
         VideoFrame_t& frame_1 = (*_frame_buffer)[_cur_frame_i];
         VideoFrame_t& frame_2 = (*_frame_buffer)[_cur_frame_i+1];
 
-        if( (rc1 = pthread_rwlock_rdlock(frame_1.rw_lock)) != 0) {
+        if( (rc1 = pthread_rwlock_rdlock(frame_1.rw_lock)) > 0) {
             perror("Unable to acquire read lock in BgdCapturerSingle");
+            return false;
         }
         
-        if( (rc2 = pthread_rwlock_rdlock(frame_2.rw_lock)) != 0) {
+        if( (rc2 = pthread_rwlock_rdlock(frame_2.rw_lock)) > 0) {
             perror("Unable to acquire 2nd read lock in BgdCapturerSingle");
+            return false;
         }
 
         if(difftime(frame_1.timestamp, // end
@@ -29,12 +31,14 @@ bool BgdCapturerSingle::runInThread() {
             std::cout << "inc" << std::endl;
         }
 
-        if( (rc1 = pthread_rwlock_unlock(frame_1.rw_lock)) != 0) {
+        if( (rc1 = pthread_rwlock_unlock(frame_1.rw_lock)) > 0) {
             perror("Unable to release read lock in BgdCapturerSingle");
+            return false;
         } 
         
-        if( (rc2 = pthread_rwlock_unlock(frame_2.rw_lock)) != 0) {
-            perror("Unable to release read lock in BgdCapturerSingle");
+        if( (rc2 = pthread_rwlock_unlock(frame_2.rw_lock)) > 0) {
+            perror("Unable to release read lock 2 in BgdCapturerSingle");
+            return false;
         }
 
        if (inc_cur_frame) {
