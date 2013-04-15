@@ -68,7 +68,17 @@ bool BgdCapturerSingle::runInThread() {
 }
 
 // TODO: implement
-bool BgdCapturerSingle::getBgd(cv::Mat* bgd_buffer) {
-    std::cout << "getbgd not implemented" << std::endl;
-    return false;
+bool BgdCapturerSingle::getBgd(cv::Mat* bgd_dest) {
+    int rc = 0;
+    if ( (rc = pthread_rwlock_rdlock(&_bgd_lock)) != 0) {
+        perror("unable to obtain read lock in getBgd");
+    }
+
+    _bgd.copyTo(*bgd_dest);
+    
+    if ( (rc = pthread_rwlock_unlock(&_bgd_lock)) != 0) {
+        perror("unable to release read lock in getBgd");
+    }
+
+    return true;
 }
