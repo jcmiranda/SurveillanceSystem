@@ -9,9 +9,11 @@
 class BgdCapturer {
 public:
 	BgdCapturer(std::vector<VideoFrame_t>* frame_buffer,
+            int buffer_length, 
             int frame_width, 
             int frame_height) :
         _frame_buffer(frame_buffer),
+        _buffer_length(buffer_length),
         _frame_width(frame_width),
         _frame_height(frame_height),
     _bgd(cv::Mat(frame_height, frame_width, CV_8UC1, cv::Scalar(0))) {}; 
@@ -19,6 +21,7 @@ public:
     virtual bool getBgd(cv::Mat* bgd_buffer) = 0;
 protected:
 	std::vector<VideoFrame_t>* _frame_buffer;
+    int _buffer_length;
     int _frame_width;
     int _frame_height;
     cv::Mat _bgd;

@@ -53,8 +53,8 @@ int main(int argc, char** argv) {
     } 
     
     // Intialize background capturing option
-	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer, 
-            FRAME_WIDTH, FRAME_HEIGHT);
+	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer,
+           FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
 	
     // Start thread for capturing background
 	pthread_t background_capture_thread;
