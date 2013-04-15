@@ -8,6 +8,7 @@
 typedef struct VideoFrame {
   cv::Mat frame;
   time_t timestamp;
+  pthread_rwlock_t* rw_lock;
 } VideoFrame_t;
 
 #endif

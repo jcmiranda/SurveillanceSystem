@@ -29,6 +29,10 @@ int main(int argc, char** argv) {
     for(int i = 0; i < FRAME_BUFLEN; i++) {
         video_frame_buffer[i].frame = cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
         video_frame_buffer[i].timestamp = time_t();
+        pthread_rwlock_t* rw_lock = (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
+        // TODO: check attr for initialization
+        pthread_rwlock_init(rw_lock, NULL);
+      video_frame_buffer[i].rw_lock = rw_lock; 
     } 
 	
     // Display live video feed window
@@ -46,7 +50,12 @@ int main(int argc, char** argv) {
 
         if(cv::waitKey(30) >= 0) break;
     } 
-   
+  
+   // TOOD: memory cleanup for rwlocks 
+    for(int i = 0; i < FRAME_BUFLEN; i++) {
+        pthread_rwlock_destroy(video_frame_buffer[i].rw_lock);
+    }
+
     video_cap.release();
     cv::destroyWindow("livefeed");
     return 0;
