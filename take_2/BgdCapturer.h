@@ -14,6 +14,7 @@ public:
     virtual bool getBgd(cv::Mat* bgd_buffer) = 0;
 protected:
 	std::vector<VideoFrame_t>* _frame_buffer;
+    int _cur_frame_i;
 };
 
 #endif

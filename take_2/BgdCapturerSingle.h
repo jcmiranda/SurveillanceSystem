@@ -9,7 +9,7 @@
 
 class BgdCapturerSingle : public BgdCapturer {
 public:
-	BgdCapturerSingle(std::vector<VideoFrame_t>* frame_buffer);
+	BgdCapturerSingle(std::vector<VideoFrame_t>* frame_buffer) : BgdCapturer(frame_buffer) {};
 	virtual bool runInThread();
     virtual bool getBgd(cv::Mat* bgd_buffer);
 };
