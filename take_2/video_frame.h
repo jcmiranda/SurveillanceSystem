@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <pthread.h>
 
+// TODO: naming conventions? underscores?
 typedef struct VideoFrame {
   cv::Mat frame;
   time_t timestamp;
