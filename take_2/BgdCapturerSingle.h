@@ -15,6 +15,7 @@ public:
                 frame_width, frame_height) {};
 	virtual bool runInThread();
     virtual bool getBgd(cv::Mat* bgd_buffer);
+    bool setBgd(const cv::Mat& bgd);
 };
 
 #endif

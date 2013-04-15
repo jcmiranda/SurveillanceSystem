@@ -92,9 +92,30 @@ int main(int argc, char** argv) {
             perror ("Failed to release write lock on next video frame.");
         }
 
+        int prev_frame_i = cur_frame_i;
         cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;
 
-        if(cv::waitKey(30) >= 0) break;
+        int key = cv::waitKey(30);
+        if( (key == 66) | (key == 98)) { // B or b
+            if ( (rc = pthread_rwlock_rdlock(
+                            video_frame_buffer[prev_frame_i].rw_lock))
+                    != 0) {
+            perror ("Failed to acquire read lock on video frame to capture as bgd.");
+            }
+
+            std::cout << "setting bgd" << std::endl;
+
+            bgdCapturerSingle.
+                setBgd(video_frame_buffer[prev_frame_i].frame);
+        
+            if ( (rc = pthread_rwlock_unlock(
+                            video_frame_buffer[prev_frame_i].rw_lock))
+                    != 0) {
+            perror ("Failed to release read lock on video frame to capture as bgd.");
+            }
+        } else if (key >= 0) {
+            break;
+        }
     } 
  
    // TODO: notify background capture thread that it should end
