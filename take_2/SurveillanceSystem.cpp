@@ -27,9 +27,11 @@ int main(int argc, char** argv) {
   
    // Initialize frame buffer 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
-        video_frame_buffer[i].frame = cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        video_frame_buffer[i].frame = 
+            cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
         video_frame_buffer[i].timestamp = time_t();
-        pthread_rwlock_t* rw_lock = (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
+        pthread_rwlock_t* rw_lock = 
+            (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
         // TODO: check attr for initialization
         pthread_rwlock_init(rw_lock, NULL);
       video_frame_buffer[i].rw_lock = rw_lock; 
@@ -38,6 +40,7 @@ int main(int argc, char** argv) {
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 
+    // Stream video
     for(;;) {
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
         cvtColor(video_frame_buffer[cur_frame_i].frame, 
@@ -54,6 +57,7 @@ int main(int argc, char** argv) {
    // TOOD: memory cleanup for rwlocks 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
         pthread_rwlock_destroy(video_frame_buffer[i].rw_lock);
+        free(video_frame_buffer[i].rw_lock);
     }
 
     video_cap.release();
