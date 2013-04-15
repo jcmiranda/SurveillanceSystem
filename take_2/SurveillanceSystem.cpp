@@ -46,13 +46,26 @@ int main(int argc, char** argv) {
 
     // Stream video
     for(;;) {
+        // TODO: double check ordering of this and the lock. Do I want this after the lock?
+        const VideoFrame& this_video_frame = video_frame_buffer[cur_frame_i];
+      
+        // Acquire write lock on this frame
+        if( (rc = pthread_rwlock_wrlock(this_video_frame.rw_lock)) != 0) {
+            perror ("Failed to acquire write lock on next video frame.");
+        }
+       
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
         cvtColor(video_frame_buffer[cur_frame_i].frame, 
                 video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
        
         time(&video_frame_buffer[cur_frame_i].timestamp);
 		cv::imshow("livefeed", video_frame_buffer[cur_frame_i].frame);
-        
+       
+        // Release write lock on this frame
+        if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
+            perror ("Failed to release write lock on next video frame.");
+        }
+
         cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;
 
         if(cv::waitKey(30) >= 0) break;
@@ -68,4 +81,3 @@ int main(int argc, char** argv) {
     cv::destroyWindow("livefeed");
     return 0;
 }
-

@@ -7,9 +7,13 @@
 
 // TODO: naming conventions? underscores?
 typedef struct VideoFrame {
-  cv::Mat frame;
-  time_t timestamp;
-  pthread_rwlock_t* rw_lock;
+    // Image data associated with this frame 
+    cv::Mat frame;    
+    // Time of frame capture 
+    time_t timestamp;
+    // Lock for data within this videoframe (timestamp and
+    // frame data) 
+    pthread_rwlock_t* rw_lock;
 } VideoFrame_t;
 
 #endif
