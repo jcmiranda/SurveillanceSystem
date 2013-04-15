@@ -14,7 +14,7 @@ const static int FRAME_BUFLEN = 100;
 
 // The index to which the current frame is being written
 static int cur_frame_i = 0;
-// static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
+static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
 int main(int argc, char** argv) {
     // Capture default webcam feed
@@ -25,32 +25,30 @@ int main(int argc, char** argv) {
 		perror("Can not set frame width and height");
 	}
   
-   /* 
    // Initialize frame buffer 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
-        // video_frame_buffer[i].frame = cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        video_frame_buffer[i].frame = cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
         video_frame_buffer[i].timestamp = time_t();
-    } */
+    } 
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 
     for(;;) {
-        // video_cap >> video_frame_buffer[cur_frame_i].frame; 
-        // cvtColor(video_frame_buffer[cur_frame_i].frame, 
-        //         video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
-        // cv::Mat frame;
-        // video_cap >>  frame;
-        // cvtColor(frame, frame, CV_BGR2GRAY);
-
-        // time(&video_frame_buffer[cur_frame_i].timestamp);
-		// cv::imshow("livefeed", video_frame_buffer[cur_frame_i].frame);
-		// cv::imshow("livefeed", frame);
+        video_cap >> video_frame_buffer[cur_frame_i].frame; 
+        cvtColor(video_frame_buffer[cur_frame_i].frame, 
+                video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
+       
+        time(&video_frame_buffer[cur_frame_i].timestamp);
+		cv::imshow("livefeed", video_frame_buffer[cur_frame_i].frame);
+        
         cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;
-    if(cv::waitKey(30) >= 0) break;
-    }
 
+        if(cv::waitKey(30) >= 0) break;
+    } 
+   
     video_cap.release();
+    cv::destroyWindow("livefeed");
     return 0;
 }
 
