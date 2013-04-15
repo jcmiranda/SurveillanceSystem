@@ -7,13 +7,11 @@
 #include "BgdCapturer.h"
 #include "video_frame.h"
 
-class BgdCapturerSingle : BgdCapturer {
+class BgdCapturerSingle : public BgdCapturer {
 public:
 	BgdCapturerSingle(std::vector<VideoFrame_t>* frame_buffer);
-	virtual bool runInThread() = 0;
-    virtual bool getBgd(cv::Mat* bgd_buffer) = 0;
-protected:
-	std::vector<VideoFrame_t>* _frame_buffer;
+	virtual bool runInThread();
+    virtual bool getBgd(cv::Mat* bgd_buffer);
 };
 
 #endif
