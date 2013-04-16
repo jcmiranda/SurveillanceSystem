@@ -15,7 +15,7 @@ public:
                 frame_width, frame_height),
    _ctr(0), _step(120) {};
 	virtual bool runInThread();
-    virtual bool processFrame() = 0;
+    virtual bool processFrame();
 private:
     int _ctr;
     int _step;
