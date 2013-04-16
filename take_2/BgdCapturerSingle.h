@@ -4,18 +4,17 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-#include "BgdCapturer.h"
+#include "FrameProcessor.h"
 #include "video_frame.h"
 
-class BgdCapturerSingle : public BgdCapturer {
+class BgdCapturerSingle : public FrameProcessor {
 public:
 	BgdCapturerSingle(std::vector<VideoFrame_t>* frame_buffer,
            int buffer_length, int frame_width, int frame_height) : 
-        BgdCapturer(frame_buffer, buffer_length, 
+        FrameProcessor(frame_buffer, buffer_length, 
                 frame_width, frame_height) {};
 	virtual bool runInThread();
-    virtual bool getBgd(cv::Mat* bgd_buffer);
-    bool setBgd(const cv::Mat& bgd);
+    virtual bool processFrame();
 };
 
 #endif

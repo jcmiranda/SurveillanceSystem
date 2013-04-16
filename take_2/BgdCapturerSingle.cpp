@@ -8,35 +8,7 @@ bool BgdCapturerSingle::runInThread() {
     return true;
 }
 
-// TODO: implement
-bool BgdCapturerSingle::getBgd(cv::Mat* bgd_dest) {
-    int rc = 0;
-    if ( (rc = pthread_rwlock_rdlock(&_bgd_lock)) != 0) {
-        perror("unable to obtain read lock in getBgd");
-    }
-
-    _bgd.copyTo(*bgd_dest);
-    
-    if ( (rc = pthread_rwlock_unlock(&_bgd_lock)) != 0) {
-        perror("unable to release read lock in getBgd");
-    }
-
-    return true;
-}
-
-// Set the bgd to the frame provided as an argument
-bool BgdCapturerSingle::setBgd(const cv::Mat& bgd) {
-    if(pthread_rwlock_wrlock(&_bgd_lock) != 0) {
-        perror("could not obtain bgd write lock to set bgd");
-        return false;
-    } 
-    
-    bgd.copyTo(_bgd);
-    
-    if(pthread_rwlock_unlock(&_bgd_lock) != 0) {
-        perror("could not release write lock to set bgd");
-        return false;
-    } 
-   
+// Nothing to do on frame process for single capture
+bool BgdCapturerSingle::processFrame() {
     return true;
 }
