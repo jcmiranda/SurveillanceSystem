@@ -31,7 +31,7 @@ class FrameProcessor {
             pthread_rwlock_destroy(&_bgd_lock);
         };
 
-        virtual bool runInThread() = 0;
+        virtual bool runInThread();
         virtual bool processFrame() = 0;
         bool getBgd(cv::Mat* bgd_buffer);
         bool setBgd(const cv::Mat& bgd);

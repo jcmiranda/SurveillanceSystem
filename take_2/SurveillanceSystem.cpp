@@ -5,6 +5,7 @@
 
 #include "video_frame.h"
 #include "BgdCapturerSingle.h"
+#include "MotionLocatorGrid.h"
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
@@ -22,6 +23,16 @@ void* capture_background(void* arg) {
 		*((BgdCapturerSingle*) arg);
 	if(!bgdCapturerSingle.runInThread()) {
 		perror("Error capturing background");
+		return NULL;
+	}
+	return NULL;	
+}
+
+void* locate_motion(void* arg) {
+	MotionLocatorGrid motionLocatorGrid =
+		*((MotionLocatorGrid*) arg);
+	if(!motionLocatorGrid.runInThread()) {
+		perror("Error locating motion");
 		return NULL;
 	}
 	return NULL;	
@@ -66,6 +77,19 @@ int main(int argc, char** argv) {
 		return  -1;
 	}
 
+    // Intialize background capturing option
+	MotionLocatorGrid motionLocatorGrid(&video_frame_buffer,
+           FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
+	
+    // Start thread for capturing background
+	pthread_t motion_location_thread;
+	if(pthread_create(&motion_location_thread,
+				NULL, 
+				&locate_motion,
+				&motionLocatorGrid)) {
+		perror("Could not create thread to locate motion.");
+		return  -1;
+	}
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	

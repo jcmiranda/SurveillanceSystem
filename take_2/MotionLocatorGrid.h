@@ -17,7 +17,6 @@ class MotionLocatorGrid : public FrameProcessor {
             FrameProcessor(frame_buffer, buffer_length,
                     frame_width, frame_height), 
             _motion_prob_y_diff(frame_width, frame_height) {};
-        virtual bool runInThread();
         virtual bool processFrame();
     private:
         MotionProbYDiff _motion_prob_y_diff;
