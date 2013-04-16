@@ -4,30 +4,52 @@
 #include <opencv2/opencv.hpp>
 
 std::vector<cv::Point> findMaxLocations(cv::Mat mask, int num_locations) {
-    std::vector<cv::Point> max_locations(num_locations, cv::Point(-1, -1));
     
-    double max_val = -1;
-    cv::Point max_loc(-1.0, -1.0);
+    
+    std::vector<cv::Point> max_locations(num_locations, cv::Point(0, 0));
+  
+    int histSize = 256; 
+    float range[] = {0, 256};
+    const float* histRange = {range};
+    bool uniform = true;
+    bool accumulate = false;
 
+    cv::Mat y_hist;
+    cv::calcHist(&mask, 1, 0, y_hist, 1, &histSize, uniform, accumulate);
+
+    for (int i = histSize - 1; i--; i>= 0) {
+        if (y_hist.at<float>(i) > 0) {
+            std::cout << "i: " << i << " num: " << int(y_hist.at<float>(i) << std::endl;
+        }
+    }
+
+    /*
+    double max_val; double min_val;
+    cv::Point max_loc; cv::Point min_loc;
+
+    cv::Mat ignore = cv::Mat(frame_height, frame_width, );
     for(int i = 0; i < num_locations; i++) {
         cv::minMaxLoc(mask, 
-                NULL, 
-                &max_val, 
-                NULL, 
-                &max_loc);
+                &min_val, 
+                &max_val,
+                &min_loc, 
+                &max_loc,
+                ignore); 
+        
         max_locations[i].x = max_loc.x;
         max_locations[i].y = max_loc.y;
 
         std::cout << max_locations[i] << ": " 
-            << mask.at<cv::Point>(max_locations[i])
+            << int(mask.at<unsigned char>(max_locations[i].x, max_locations[i].y))
             << std::endl;
 
         // TODO: figure out some way to not stomp on data
-        mask.at<float>(max_locations[i].x, max_locations[i].y) = -1.0;
+        ignore.at<int>(max_locations[i].x, 
+                max_locations[i].y) = 1;
     }
 
-    std::cout << std::endl;
-
+    // std::cout << mask << std::endl;
+*/
     return max_locations;
 }
 
