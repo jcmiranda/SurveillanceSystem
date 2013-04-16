@@ -107,9 +107,22 @@ int main(int argc, char** argv) {
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
         cvtColor(video_frame_buffer[cur_frame_i].frame, 
                 video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
-       
+
+
         time(&video_frame_buffer[cur_frame_i].timestamp);
-		cv::imshow("livefeed", video_frame_buffer[cur_frame_i].frame);
+        cv::Mat toDraw;
+        (video_frame_buffer[cur_frame_i].frame).copyTo(toDraw);
+        // std::cout << "center: " << motion_centers[0] << std::endl;
+        cv::Point pt = motionLocatorGrid.getMotionCenters();
+        std::cout << "Pt: " << pt.x << " " << pt.y << std::endl;
+        cv::circle(toDraw, 
+                pt,
+        //       cv::Point(100, 100), // motion_centers[0], 
+                10,
+                cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+		cv::imshow("livefeed", toDraw);
        
         // Release write lock on this frame
         if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
