@@ -17,7 +17,6 @@ class BgdCapturer {
             _frame_width(frame_width),
             _frame_height(frame_height),
             _bgd(cv::Mat(frame_height, frame_width, CV_8UC1, cv::Scalar(0))), _cur_frame_i(0) {
-                std::cout << "In constructor" << std::endl;
                 int rc = 0;
                 if( (rc = pthread_rwlock_init(&_bgd_lock, NULL)) != 0) {
                     perror("rwlock initialization failed in bgd capturer constructor.");
