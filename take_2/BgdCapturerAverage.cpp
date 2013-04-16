@@ -1,7 +1,9 @@
 #include "BgdCapturerAverage.h"
 #include "video_frame.h"
 
-// TODO: implement
+// TODO: implement average portion of average capturer -> buffer of
+// stored frames, choice on when to average or running average. Mean
+// vs median
 bool BgdCapturerAverage::runInThread() {
    
     // TODO: add some means of signaling background thread to exit 
@@ -40,8 +42,8 @@ bool BgdCapturerAverage::runInThread() {
                     perror("could not obtain bgd write lock to update");
                 } 
                 
-                std::cout << "Capturing new bgd" << std::endl;
-
+                // TODO: Add function to average frames here
+                // rather than just grabbing new frame
                 _bgd = cv::Mat(frame_1.frame);
                 if(pthread_rwlock_unlock(&_bgd_lock) != 0) {
                     perror("could not release write lock to update");
