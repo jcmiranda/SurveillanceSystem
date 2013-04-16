@@ -1,7 +1,7 @@
 CC = g++
 OBJ = SurveillanceSystem.o BgdCapturerSingle.o  BgdCapturerAverage.o FrameProcessor.o MotionProbYDiff.o MotionLocatorGrid.o
-CFLAGS = -I/opt/local/include/ -Wall -c
-LFLAGS = -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video
+CFLAGS = -I/opt/local/include/ -Wall -c 
+LFLAGS = -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video -lpthread 
 
 all: $(OBJ)
 	$(CC) $(LFLAGS) -o main $(OBJ)

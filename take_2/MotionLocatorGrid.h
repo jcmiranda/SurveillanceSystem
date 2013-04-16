@@ -29,9 +29,9 @@ class MotionLocatorGrid : public FrameProcessor {
         cv::Point getMotionCenters();
         cv::Point findMaxLocation(cv::Mat mask,
                int num_locations); 
-        static cv::Point _motion_center;
     private:
         MotionProbYDiff _motion_prob_y_diff;
+        cv::Point _motion_center;
         pthread_rwlock_t _motion_centers_lock;
 };
 
