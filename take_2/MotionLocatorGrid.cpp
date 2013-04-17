@@ -9,21 +9,23 @@ cv::Point MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations) {
     //std::vector<cv::Point> max_locations(num_locations, cv::Point(0, 0));
     
     cv::Mat thresholded(_frame_height, _frame_width, CV_32F, cv::Scalar(0));
-    cv::threshold(mask, thresholded, 20, 256, 3);
+    cv::threshold(mask, thresholded, 150, 256, 3);
     cv::Mat mask_f;
     thresholded.convertTo(thresholded, CV_32F);
     divide(256, thresholded, thresholded);
 
     float x_center = 0;
     float y_center = 0;
+    float total = 0;
     int count = 0;
 
     for(int r = 0; r < _frame_height; r++) {
         for(int c = 0; c < _frame_width; c++) {
-
+            float val = thresholded.at<float>(r, c);
             if(thresholded.at<float>(r, c) > 0) {
                 x_center += c;
                 y_center += r;
+                total += val;
                 count++;
             }
         }
@@ -49,10 +51,21 @@ bool MotionLocatorGrid::processFrame() {
     _motion_prob_y_diff.getMotionProbs(this_frame.frame, 
             bgd, 
             &mask);
+   
+    int rc = 0; 
+    if( (rc = pthread_rwlock_wrlock(&_last_prob_mask_lock)) != 0) {
+        perror("unable to lock on last prob mask.");
+    }
+
+    mask.copyTo(_last_prob_mask);
+
+    if( (rc = pthread_rwlock_unlock(&_last_prob_mask_lock)) != 0) {
+        perror("unable to unlock on last prob mask.");
+    }
+
 
     cv::Point max_loc = findMaxLocation(mask, 1);
 
-    int rc = 0;
     if( (rc = pthread_rwlock_wrlock(&_motion_centers_lock)) != 0) {
         perror("unable to lock on motion centers.");
     }
@@ -82,6 +95,20 @@ cv::Point MotionLocatorGrid::getMotionCenters() {
         perror("unable to unlock on motion centers.");
     }
     return output;
+}
+
+bool MotionLocatorGrid::getLastProbMask(cv::Mat* dst) {
+    int rc = 0;
+    if( (rc = pthread_rwlock_rdlock(&_last_prob_mask_lock)) != 0) {
+        perror("unable to lock on prob mask.");
+    }
+
+    _last_prob_mask.copyTo(*dst);
+
+    if( (rc = pthread_rwlock_unlock(&_last_prob_mask_lock)) != 0) {
+        perror("unable to unlock on prob mask.");
+    }
+    return true;
 }
 
    /* 

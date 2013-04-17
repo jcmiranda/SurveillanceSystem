@@ -19,9 +19,9 @@ static int cur_frame_i = 0;
 static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
 void* capture_background(void* arg) {
-	BgdCapturerSingle bgdCapturerSingle =
-		*((BgdCapturerSingle*) arg);
-	if(!bgdCapturerSingle.runInThread()) {
+	BgdCapturerSingle* bgdCapturerSingle =
+		(BgdCapturerSingle*) arg;
+    if(!bgdCapturerSingle->runInThread()) {
 		perror("Error capturing background");
 		return NULL;
 	}
@@ -29,9 +29,9 @@ void* capture_background(void* arg) {
 }
 
 void* locate_motion(void* arg) {
-	MotionLocatorGrid motionLocatorGrid =
-		*((MotionLocatorGrid*) arg);
-	if(!motionLocatorGrid.runInThread()) {
+	MotionLocatorGrid* motionLocatorGrid =
+		(MotionLocatorGrid*) arg;
+	if(!motionLocatorGrid->runInThread()) {
 		perror("Error locating motion");
 		return NULL;
 	}
@@ -80,6 +80,7 @@ int main(int argc, char** argv) {
     // Intialize background capturing option
 	MotionLocatorGrid motionLocatorGrid(&video_frame_buffer,
            FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
+    std::cout << "Addr in main: " << &motionLocatorGrid << std::endl;
 	
     // Start thread for capturing background
 	pthread_t motion_location_thread;
@@ -117,12 +118,28 @@ int main(int argc, char** argv) {
         std::cout << "Pt: " << pt.x << " " << pt.y << std::endl;
         cv::circle(toDraw, 
                 pt,
-        //       cv::Point(100, 100), // motion_centers[0], 
                 10,
                 cv::Scalar(255),
                 -1, // thickness
                 8); // linetype
-		cv::imshow("livefeed", toDraw);
+
+        cv::Mat prob_mask;
+        motionLocatorGrid.getLastProbMask(&prob_mask);
+        cv::circle(prob_mask, 
+                pt,
+                10,
+                cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+        cv::Mat bgd;
+        bgdCapturerSingle.getBgd(&bgd);
+        hconcat(toDraw,
+                prob_mask,
+                toDraw);
+        hconcat(toDraw,
+                bgd,
+                toDraw);
+        cv::imshow("livefeed", toDraw);
        
         // Release write lock on this frame
         if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
@@ -143,6 +160,9 @@ int main(int argc, char** argv) {
             std::cout << "setting bgd" << std::endl;
 
             bgdCapturerSingle.
+                setBgd(video_frame_buffer[prev_frame_i].frame);
+
+            motionLocatorGrid.
                 setBgd(video_frame_buffer[prev_frame_i].frame);
         
             if ( (rc = pthread_rwlock_unlock(
