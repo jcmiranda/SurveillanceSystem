@@ -3,9 +3,8 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-cv::Point MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations) {
-    
-    
+bool MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations, 
+        cv::Point* dst_loc, cv::Point* dst_loc2) {
     //std::vector<cv::Point> max_locations(num_locations, cv::Point(0, 0));
     
     cv::Mat thresholded(_frame_height, _frame_width, CV_32F, cv::Scalar(0));
@@ -16,6 +15,8 @@ cv::Point MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations) {
 
     float x_center = 0;
     float y_center = 0;
+    float x_total = 0;
+    float y_total = 0;
     float total = 0;
     int count = 0;
 
@@ -25,6 +26,8 @@ cv::Point MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations) {
             if(thresholded.at<float>(r, c) > 0) {
                 x_center += c;
                 y_center += r;
+                x_total += c*val;
+                y_total += r*val;
                 total += val;
                 count++;
             }
@@ -34,9 +37,17 @@ cv::Point MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations) {
     if(count != 0) {
         x_center = x_center / ((float) count);
         y_center = y_center / ((float) count);
+        x_total = x_total / total;
+        y_total = y_total / total;
     }
 
-    return cv::Point(x_center, y_center);
+    dst_loc->x = x_center;
+    dst_loc->y = y_center;
+
+    dst_loc2->x = x_total;
+    dst_loc2->y = y_total;
+
+    return true;
 }
 
 bool MotionLocatorGrid::processFrame() {
@@ -64,7 +75,9 @@ bool MotionLocatorGrid::processFrame() {
     }
 
 
-    cv::Point max_loc = findMaxLocation(mask, 1);
+    cv::Point max_loc;
+    cv::Point max_loc_weighted;
+    findMaxLocation(mask, 1, &max_loc, &max_loc_weighted);
 
     if( (rc = pthread_rwlock_wrlock(&_motion_centers_lock)) != 0) {
         perror("unable to lock on motion centers.");
@@ -72,6 +85,8 @@ bool MotionLocatorGrid::processFrame() {
 
     _motion_center.x = max_loc.x;
     _motion_center.y = max_loc.y;
+    _motion_center_weighted.x = max_loc_weighted.x;
+    _motion_center_weighted.y = max_loc_weighted.y;
 
     std::cout << "In calc: " << _motion_center.x << " " << _motion_center.y << std::endl;  
     if( (rc = pthread_rwlock_unlock(&_motion_centers_lock)) != 0) {
@@ -82,14 +97,20 @@ bool MotionLocatorGrid::processFrame() {
     return true;
 }
 
-cv::Point MotionLocatorGrid::getMotionCenters() {
+cv::Point MotionLocatorGrid::getMotionCenters(int i) {
     int rc = 0;
     if( (rc = pthread_rwlock_rdlock(&_motion_centers_lock)) != 0) {
         perror("unable to lock on motion centers.");
     }
 
-    cv::Point output(_motion_center.x, _motion_center.y);
-    std::cout << "In get: " << _motion_center.x << " " << _motion_center.y << std::endl;  
+    cv::Point output;
+    if (i == 0) {
+        output = cv::Point(_motion_center.x, _motion_center.y);
+    } else if (i == 1) {
+        output = cv::Point(_motion_center_weighted.x, _motion_center_weighted.y);
+    } else {
+        std::cout << "Unsupported point index for motion center." << std::endl;
+    }
 
     if( (rc = pthread_rwlock_unlock(&_motion_centers_lock)) != 0) {
         perror("unable to unlock on motion centers.");

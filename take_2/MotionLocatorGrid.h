@@ -30,13 +30,16 @@ class MotionLocatorGrid : public FrameProcessor {
             pthread_rwlock_destroy(&_motion_centers_lock);
         };
         virtual bool processFrame();
-        cv::Point getMotionCenters();
+        cv::Point getMotionCenters(int i);
         bool getLastProbMask(cv::Mat* dst);
-        cv::Point findMaxLocation(cv::Mat mask,
-               int num_locations); 
+        bool findMaxLocation(cv::Mat mask,
+               int num_locations, 
+               cv::Point* dst_loc,
+               cv::Point* dst_loc2); 
     private:
         MotionProbYDiff _motion_prob_y_diff;
         volatile cv::Point _motion_center;
+        cv::Point _motion_center_weighted;
         cv::Mat _last_prob_mask;
         pthread_rwlock_t _last_prob_mask_lock;
         pthread_rwlock_t _motion_centers_lock;

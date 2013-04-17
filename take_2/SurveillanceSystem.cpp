@@ -114,21 +114,34 @@ int main(int argc, char** argv) {
         cv::Mat toDraw;
         (video_frame_buffer[cur_frame_i].frame).copyTo(toDraw);
         // std::cout << "center: " << motion_centers[0] << std::endl;
-        cv::Point pt = motionLocatorGrid.getMotionCenters();
-        std::cout << "Pt: " << pt.x << " " << pt.y << std::endl;
+        cv::Point unweighted = motionLocatorGrid.getMotionCenters(0);
+        cv::Point weighted = motionLocatorGrid.getMotionCenters(1);
         cv::circle(toDraw, 
-                pt,
+                unweighted,
                 10,
                 cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+        
+        cv::circle(toDraw, 
+                weighted,
+                10,
+                cv::Scalar(150),
                 -1, // thickness
                 8); // linetype
 
         cv::Mat prob_mask;
         motionLocatorGrid.getLastProbMask(&prob_mask);
         cv::circle(prob_mask, 
-                pt,
+                unweighted,
                 10,
                 cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+        cv::circle(prob_mask, 
+                weighted,
+                10,
+                cv::Scalar(150),
                 -1, // thickness
                 8); // linetype
         cv::Mat bgd;
