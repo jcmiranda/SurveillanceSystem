@@ -1,5 +1,5 @@
 01
-cd3dc3d926ec9ebf133fc784cf0fffb76e755561
 Desc: One motion center with comparison of weighted and unweighted averages
 Time: 04/17/2013 3:58pm
+Compilation: i686-apple-darwin11-llvm-gcc-4.2
 Git commit: cd3dc3d926ec9ebf133fc784cf0fffb76e755561
