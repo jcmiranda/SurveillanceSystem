@@ -6,6 +6,7 @@
 #include "video_frame.h"
 #include "BgdCapturerSingle.h"
 #include "MotionLocatorGrid.h"
+#include "cvblob.h"
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
@@ -152,6 +153,28 @@ int main(int argc, char** argv) {
         hconcat(toDraw,
                 bgd,
                 toDraw);
+       
+        cvb::CvBlobs blobs;
+        IplImage* labelImg = cvCreateImage(cvSize(FRAME_WIDTH, 
+                    FRAME_HEIGHT), 
+                IPL_DEPTH_LABEL,
+                1);
+        IplImage* blob_frame = cvCreateImage(cvSize(FRAME_WIDTH, 
+                    FRAME_HEIGHT), 
+                8,
+                3);
+        IplImage* thresh_ipl = new IplImage(prob_mask);
+        
+        unsigned int result = cvLabel(thresh_ipl, labelImg, blobs);
+        cvb::cvRenderBlobs(labelImg, blobs, blob_frame, blob_frame);
+        
+        cv::Mat blob_mat(blob_frame);
+        cvtColor(blob_mat, blob_mat, CV_BGR2GRAY);
+        
+        hconcat(toDraw,
+                blob_mat,
+                toDraw);
+
         cv::imshow("livefeed", toDraw);
        
         // Release write lock on this frame

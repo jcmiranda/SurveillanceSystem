@@ -8,7 +8,7 @@ bool MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations,
     //std::vector<cv::Point> max_locations(num_locations, cv::Point(0, 0));
     
     cv::Mat thresholded(_frame_height, _frame_width, CV_32F, cv::Scalar(0));
-    cv::threshold(mask, thresholded, 150, 256, 3);
+    cv::threshold(mask, thresholded, 200, 256, 3); // 0 = binary, 3 - thresh to zero
     cv::Mat mask_f;
     thresholded.convertTo(thresholded, CV_32F);
     divide(256, thresholded, thresholded);
