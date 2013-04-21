@@ -116,37 +116,10 @@ int main(int argc, char** argv) {
         time(&video_frame_buffer[cur_frame_i].timestamp);
         cv::Mat toDraw;
         (video_frame_buffer[cur_frame_i].frame).copyTo(toDraw);
-        // std::cout << "center: " << motion_centers[0] << std::endl;
-        /*cv::Point unweighted = motionLocBlobThresh.getMotionCenters(0);
-        cv::Point weighted = motionLocBlobThresh.getMotionCenters(1);
-        cv::circle(toDraw, 
-                unweighted,
-                10,
-                cv::Scalar(255),
-                -1, // thickness
-                8); // linetype
         
-        cv::circle(toDraw, 
-                weighted,
-                10,
-                cv::Scalar(150),
-                -1, // thickness
-                8); // linetype */
-
         cv::Mat prob_mask;
         motionLocBlobThresh.getLastProbMask(&prob_mask);
-        /*cv::circle(prob_mask, 
-                unweighted,
-                10,
-                cv::Scalar(255),
-                -1, // thickness
-                8); // linetype
-        cv::circle(prob_mask, 
-                weighted,
-                10,
-                cv::Scalar(150),
-                -1, // thickness
-                8); // linetype */
+        
         cv::Mat bgd;
         bgdCapturerSingle.getBgd(&bgd);
         hconcat(toDraw,
@@ -162,31 +135,7 @@ int main(int argc, char** argv) {
         hconcat(toDraw,
                 y_frame_with_blobs,
                 toDraw);
-
-
-
- /*       
-        cvb::CvBlobs blobs;
-        IplImage* labelImg = cvCreateImage(cvSize(FRAME_WIDTH, 
-                    FRAME_HEIGHT), 
-                IPL_DEPTH_LABEL,
-                1);
-        IplImage* blob_frame = cvCreateImage(cvSize(FRAME_WIDTH, 
-                    FRAME_HEIGHT), 
-                8,
-                3);
-        IplImage* thresh_ipl = new IplImage(prob_mask);
-        
-        unsigned int result = cvLabel(thresh_ipl, labelImg, blobs);
-        cvb::cvRenderBlobs(labelImg, blobs, blob_frame, blob_frame);
-        
-        cv::Mat blob_mat(blob_frame);
-        cvtColor(blob_mat, blob_mat, CV_BGR2GRAY);
-        
-        hconcat(toDraw,
-                blob_mat,
-                toDraw);
-*/
+ 
         cv::imshow("livefeed", toDraw);
        
         // Release write lock on this frame
