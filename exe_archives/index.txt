@@ -10,3 +10,9 @@ of 80. No morphological operators.
 Time: 04/20/2013 7:13pm 
 Compilation: i686-apple-darwin11-llvm-gcc-4.2
 Git commit: f557b6ad99b798a61fdb9ebb77f300db69a0d4c2
+
+03
+Desc: Annotating video frames with blobs. Masks still not cleaned up
+Time: 04/20/2013 10:09pm 
+Compilation: i686-apple-darwin11-llvm-gcc-4.2
+Git commit: 4e59170fcf929d357b426187832769dbc677ce67
