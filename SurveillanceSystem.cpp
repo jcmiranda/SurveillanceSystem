@@ -1,158 +1,225 @@
-#include "BackgroundSingleCapturer.h"
-#include <pthread.h>
-#include <iostream>
-#include <opencv2/opencv.hpp>
 #include <time.h>
+#include <opencv2/opencv.hpp>
+#include <pthread.h>
 #include <vector>
 
+#include "video_frame.h"
+#include "BgdCapturerSingle.h"
+#include "MotionLocatorGrid.h"
+#include "cvblob.h"
+
+// Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
-const static int FRAME_WIDTH = 360;
-const static int FRAME_BUFLEN = 25;
+const static int FRAME_WIDTH = 370;
+
+// Length of video frame buffer
+const static int FRAME_BUFLEN = 100;
+
+// The index to which the current frame is being written
 static int cur_frame_i = 0;
-std::vector<cv::Mat> frame_buffer(sizeof(cv::Mat));
+static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
 void* capture_background(void* arg) {
-	BackgroundSingleCapturer backgroundSingleCapturer =
-		*((BackgroundSingleCapturer*) arg);
-	if(!backgroundSingleCapturer.runInThread()) {
+	BgdCapturerSingle* bgdCapturerSingle =
+		(BgdCapturerSingle*) arg;
+    if(!bgdCapturerSingle->runInThread()) {
 		perror("Error capturing background");
 		return NULL;
 	}
 	return NULL;	
 }
 
+void* locate_motion(void* arg) {
+	MotionLocatorGrid* motionLocatorGrid =
+		(MotionLocatorGrid*) arg;
+	if(!motionLocatorGrid->runInThread()) {
+		perror("Error locating motion");
+		return NULL;
+	}
+	return NULL;	
+}
+
 int main(int argc, char** argv) {
-	
-	// Capture default webcam feed
-	cv::VideoCapture video_cap(0);
-	if(!(video_cap.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH) &
+    // Capture default webcam feed
+    cv::VideoCapture video_cap(0);
+	// Initialize frame width and frame height for frame capture
+    if(!(video_cap.set(CV_CAP_PROP_FRAME_WIDTH, FRAME_WIDTH) &
 				video_cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT))) {
 		perror("Can not set frame width and height");
 	}
-
-	// Background frame
-	cv::Mat bgd_frame(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
 	
-	// Mutex for editing background frame
-	pthread_mutex_t mutex_bgd;
-	if(pthread_mutex_init(&mutex_bgd, NULL) != 0) {
-		perror("Failed to initialize background mutex");
-		return -1;
-	}
-
-	pthread_mutex_t mutex_bgd_r_frame_i;
-	if(pthread_mutex_init(&mutex_bgd_r_frame_i, NULL) != 0) {
-		perror("Failed to initialize background r frame i mutex");
-		return -1;
-	}
+   // Return code for initializing rwlocks 
+   int rc = 0; 
+   // Initialize frame buffer 
+    for(int i = 0; i < FRAME_BUFLEN; i++) {
+        video_frame_buffer[i].frame = 
+            cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        video_frame_buffer[i].timestamp = time_t();
+        pthread_rwlock_t* rw_lock = 
+            (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
+        // TODO: check attr for initialization
+        if( (rc = pthread_rwlock_init(rw_lock, NULL)) != 0) {
+            perror("rwlock initialization failed.");
+        }
+      video_frame_buffer[i].rw_lock = rw_lock; 
+    } 
+    
+    // Intialize background capturing option
+	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer,
+           FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
 	
-    pthread_mutex_t mutex_motion_r_frame_i;
-	if(pthread_mutex_init(&mutex_motion_r_frame_i, NULL) != 0) {
-		perror("Failed to initialize motion analysis r frame i mutex");
-		return -1;
-	}
-
-	// Filename for saving current background
-	std::string bgd_filename = "background.jpg";
-
-	// Intialize background capturing option
-	BackgroundSingleCapturer backgroundSingleCapturer(bgd_filename,
-			&frame_buffer, &bgd_frame, &mutex_bgd, &mutex_bgd_r_frame_i);
-
-    // Initialize motion analysis
-    MotionAnalyzerSquares motionAnalyzerSquares(&frame_buffer, &bgd_frame,
-        &mutex_bgd, &mutex_motion_r_frame_i);
-
-	// Start thread for capturing background
+    // Start thread for capturing background
 	pthread_t background_capture_thread;
 	if(pthread_create(&background_capture_thread, 
 				NULL, 
 				&capture_background, 
-				&backgroundSingleCapturer)) {
+				&bgdCapturerSingle)) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
 
-	cv::Mat silhouette(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
-
-	// Display live video feed window
-	cv::namedWindow("livefeed", 1);	
-	for(;;) {
-		// cv::Mat cur_frame;
-		cv::Mat frame_and_bgd(FRAME_HEIGHT, 2*FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
-
-		int return_val = pthread_mutex_trylock(&mutex_bgd);
-		
-		video_cap >> frame_buffer[cur_frame_i]; 
-		cvtColor(frame_buffer[cur_frame_i], frame_buffer[cur_frame_i], CV_BGR2GRAY);
-		
-		if(return_val != 0) {
-			hconcat(frame_buffer[cur_frame_i], 
-					cv::Mat(FRAME_HEIGHT, 
-						FRAME_WIDTH, 
-						CV_8UC1, 
-						cv::Scalar(0)), 
-					frame_and_bgd);
-		} else {
-			cv::Mat frame_diff;
-			frame_diff = cv::abs(frame_buffer[cur_frame_i]- bgd_frame);
-
-			double threshold_value = 30;
-			cv::threshold(frame_diff, silhouette, threshold_value, 255, 3);
-			hconcat(silhouette, bgd_frame, frame_and_bgd);
-			
-			return_val = pthread_mutex_unlock(&mutex_bgd);
-			if(return_val != 0) {
-				std::cout << "Failed unlocking bgd" << std::endl;
-			}	
-		}
-		
-		backgroundSingleCapturer.setRFrameI(cur_frame_i);	
-        motionAnalyzerSquares.setRFrameI(cur_frame_i);
-		cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;	
-
-		cv::imshow("livefeed", frame_and_bgd);
-		if(cv::waitKey(30) >= 0) break;
-	}
-
-	// Join thread for capturing background	
-	if(pthread_join(background_capture_thread, NULL)) {
-		perror("Could not join background capture thread");
-		return -1;
-	}
-
-	// Destroy mutex for background
-	if(pthread_mutex_destroy(&mutex_bgd) != 0) {
-		perror("Failed to destroy background mutex");
-		return -1;
-	}
-
-	return 0;	
-}
-
-// Motion history code for motionSegment and updateMotionHistory
-#if 0
-	cv::Mat mhi(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
-	cv::Mat segmask(FRAME_HEIGHT, FRAME_WIDTH, CV_32FC1, cv::Scalar(0));
-	double timestamp = (double) clock() / CLOCKS_PER_SEC;
-	double duration = 30;
+    // Intialize background capturing option
+	MotionLocatorGrid motionLocatorGrid(&video_frame_buffer,
+           FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
+    std::cout << "Addr in main: " << &motionLocatorGrid << std::endl;
 	
-	timestamp = (double) clock() / CLOCKS_PER_SEC; 
-	std::vector<cv::Rect> boundingRects(sizeof(cv::Rect));
-	double segThresh = 40;
-	cv::segmentMotion(mhi, segmask, boundingRects, timestamp, segThresh); 
-	cv::updateMotionHistory(silhouette, mhi, timestamp, duration);
-
-	// Code for bounding rects is giving entire image	
-	for (size_t i = 0; i < boundingRects.size(); i++) {
-		cv::Rect this_rect = boundingRects[i];
-		cv::rectangle(cur_color_frame, 
-				cv::Point(this_rect.x, this_rect.y),
-				cv::Point(this_rect.x + this_rect.width, 
-					this_rect.y + this_rect.height),
-				cv::Scalar(0, 255, 255),
-				5, 
-				8);	
+    // Start thread for capturing background
+	pthread_t motion_location_thread;
+	if(pthread_create(&motion_location_thread,
+				NULL, 
+				&locate_motion,
+				&motionLocatorGrid)) {
+		perror("Could not create thread to locate motion.");
+		return  -1;
 	}
+	
+    // Display live video feed window
+	cv::namedWindow("livefeed", 1);	
 
-#endif
+    // Stream video
+    for(;;) {
+        // TODO: double check ordering of this and the lock. Do I want this after the lock?
+        const VideoFrame& this_video_frame = video_frame_buffer[cur_frame_i];
+      
+        // Acquire write lock on this frame
+        if( (rc = pthread_rwlock_wrlock(this_video_frame.rw_lock)) != 0) {
+            perror ("Failed to acquire write lock on next video frame.");
+        }
+       
+        video_cap >> video_frame_buffer[cur_frame_i].frame; 
+        cvtColor(video_frame_buffer[cur_frame_i].frame, 
+                video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
+
+
+        time(&video_frame_buffer[cur_frame_i].timestamp);
+        cv::Mat toDraw;
+        (video_frame_buffer[cur_frame_i].frame).copyTo(toDraw);
+        // std::cout << "center: " << motion_centers[0] << std::endl;
+        cv::Point unweighted = motionLocatorGrid.getMotionCenters(0);
+        cv::Point weighted = motionLocatorGrid.getMotionCenters(1);
+        cv::circle(toDraw, 
+                unweighted,
+                10,
+                cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+        
+        cv::circle(toDraw, 
+                weighted,
+                10,
+                cv::Scalar(150),
+                -1, // thickness
+                8); // linetype
+
+        cv::Mat prob_mask;
+        motionLocatorGrid.getLastProbMask(&prob_mask);
+        cv::circle(prob_mask, 
+                unweighted,
+                10,
+                cv::Scalar(255),
+                -1, // thickness
+                8); // linetype
+        cv::circle(prob_mask, 
+                weighted,
+                10,
+                cv::Scalar(150),
+                -1, // thickness
+                8); // linetype
+        cv::Mat bgd;
+        bgdCapturerSingle.getBgd(&bgd);
+        hconcat(toDraw,
+                prob_mask,
+                toDraw);
+        hconcat(toDraw,
+                bgd,
+                toDraw);
+       
+        cvb::CvBlobs blobs;
+        IplImage* labelImg = cvCreateImage(cvSize(FRAME_WIDTH, 
+                    FRAME_HEIGHT), 
+                IPL_DEPTH_LABEL,
+                1);
+        IplImage* blob_frame = cvCreateImage(cvSize(FRAME_WIDTH, 
+                    FRAME_HEIGHT), 
+                8,
+                3);
+        IplImage* thresh_ipl = new IplImage(prob_mask);
+        
+        unsigned int result = cvLabel(thresh_ipl, labelImg, blobs);
+        cvb::cvRenderBlobs(labelImg, blobs, blob_frame, blob_frame);
+        
+        cv::Mat blob_mat(blob_frame);
+        cvtColor(blob_mat, blob_mat, CV_BGR2GRAY);
+        
+        hconcat(toDraw,
+                blob_mat,
+                toDraw);
+
+        cv::imshow("livefeed", toDraw);
+       
+        // Release write lock on this frame
+        if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
+            perror ("Failed to release write lock on next video frame.");
+        }
+
+        int prev_frame_i = cur_frame_i;
+        cur_frame_i = (cur_frame_i + 1) % FRAME_BUFLEN;
+
+        int key = cv::waitKey(30);
+        if( (key == 66) | (key == 98)) { // B or b
+            if ( (rc = pthread_rwlock_rdlock(
+                            video_frame_buffer[prev_frame_i].rw_lock))
+                    != 0) {
+            perror ("Failed to acquire read lock on video frame to capture as bgd.");
+            }
+
+            std::cout << "setting bgd" << std::endl;
+
+            bgdCapturerSingle.
+                setBgd(video_frame_buffer[prev_frame_i].frame);
+
+            motionLocatorGrid.
+                setBgd(video_frame_buffer[prev_frame_i].frame);
+        
+            if ( (rc = pthread_rwlock_unlock(
+                            video_frame_buffer[prev_frame_i].rw_lock))
+                    != 0) {
+            perror ("Failed to release read lock on video frame to capture as bgd.");
+            }
+        } else if (key >= 0) {
+            break;
+        }
+    } 
+ 
+   // TODO: notify background capture thread that it should end
+   // TODO: add join for background capture thread
+   // TODO: memory cleanup for rwlocks 
+    for(int i = 0; i < FRAME_BUFLEN; i++) {
+        pthread_rwlock_destroy(video_frame_buffer[i].rw_lock);
+        free(video_frame_buffer[i].rw_lock);
+    }
+
+    video_cap.release();
+    cv::destroyWindow("livefeed");
+    return 0;
+}
