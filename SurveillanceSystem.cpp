@@ -95,6 +95,7 @@ int main(int argc, char** argv) {
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
+	cv::namedWindow("livecolor", 1);	
 
     // Stream video
     for(;;) {
@@ -137,7 +138,7 @@ int main(int argc, char** argv) {
                 toDraw);
  
         cv::imshow("livefeed", toDraw);
-       
+        cv::imshow("livecolor", color_frame); 
         // Release write lock on this frame
         if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
             perror ("Failed to release write lock on next video frame.");

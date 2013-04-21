@@ -95,7 +95,12 @@ bool MotionLocBlobThresh::annotateMatWithBlobs(cv::Mat* mat) {
     }
     
     IplImage* blob_frame = new IplImage(*mat);
-    cvb::cvRenderBlobs(_label_img, _motion_blobs, blob_frame, blob_frame);
+    cvb::cvRenderBlobs(_label_img, 
+            _motion_blobs, 
+            blob_frame, 
+            blob_frame,
+            CV_BLOB_RENDER_COLOR,
+            0.5);
 
     *mat = blob_frame;
     
