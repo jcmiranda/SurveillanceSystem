@@ -28,6 +28,22 @@ bool MotionLocBlobThresh::processFrame() {
 
     cv::Mat thresh_mask;
     cv::threshold(mask, thresh_mask, 20, 256, 0);    
+
+    int morph_size = 10;
+    cv::Mat element = cv::getStructuringElement(2, // ellipse
+            cv::Size(2 * morph_size + 1, 
+                2 * morph_size + 1), 
+            cv::Point( morph_size, morph_size));
+    cv::morphologyEx(thresh_mask, 
+            thresh_mask, 
+            2, //opening
+            element);
+    cv::morphologyEx(thresh_mask, 
+            thresh_mask, 
+            3,  // Closing
+            element);
+ 
+
     IplImage* thresh_ipl = new IplImage(thresh_mask);
     cvLabel(thresh_ipl, 
             _label_img, 
