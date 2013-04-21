@@ -1,9 +1,9 @@
-#include "MotionLocatorGrid.h"
+#include "MotionLocBlobThresh.h"
 
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-bool MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations, 
+bool MotionLocBlobThresh::findMaxLocation(cv::Mat mask, int num_locations, 
         cv::Point* dst_loc, cv::Point* dst_loc2) {
     //std::vector<cv::Point> max_locations(num_locations, cv::Point(0, 0));
     
@@ -50,7 +50,7 @@ bool MotionLocatorGrid::findMaxLocation(cv::Mat mask, int num_locations,
     return true;
 }
 
-bool MotionLocatorGrid::processFrame() {
+bool MotionLocBlobThresh::processFrame() {
     cv::Mat mask(_frame_height, _frame_width, CV_8UC1,
             cv::Scalar(0));
     cv::Mat bgd(_frame_height, _frame_width, CV_8UC1,
@@ -97,7 +97,7 @@ bool MotionLocatorGrid::processFrame() {
     return true;
 }
 
-cv::Point MotionLocatorGrid::getMotionCenters(int i) {
+cv::Point MotionLocBlobThresh::getMotionCenters(int i) {
     int rc = 0;
     if( (rc = pthread_rwlock_rdlock(&_motion_centers_lock)) != 0) {
         perror("unable to lock on motion centers.");
@@ -118,7 +118,7 @@ cv::Point MotionLocatorGrid::getMotionCenters(int i) {
     return output;
 }
 
-bool MotionLocatorGrid::getLastProbMask(cv::Mat* dst) {
+bool MotionLocBlobThresh::getLastProbMask(cv::Mat* dst) {
     int rc = 0;
     if( (rc = pthread_rwlock_rdlock(&_last_prob_mask_lock)) != 0) {
         perror("unable to lock on prob mask.");

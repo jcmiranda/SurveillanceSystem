@@ -5,7 +5,7 @@
 
 #include "video_frame.h"
 #include "BgdCapturerSingle.h"
-#include "MotionLocatorGrid.h"
+#include "MotionLocBlobThresh.h"
 #include "cvblob.h"
 
 // Height and width of frame in pixels
@@ -30,9 +30,9 @@ void* capture_background(void* arg) {
 }
 
 void* locate_motion(void* arg) {
-	MotionLocatorGrid* motionLocatorGrid =
-		(MotionLocatorGrid*) arg;
-	if(!motionLocatorGrid->runInThread()) {
+	MotionLocBlobThresh* motionLocBlobThresh =
+		(MotionLocBlobThresh*) arg;
+	if(!motionLocBlobThresh->runInThread()) {
 		perror("Error locating motion");
 		return NULL;
 	}
@@ -79,16 +79,16 @@ int main(int argc, char** argv) {
 	}
 
     // Intialize background capturing option
-	MotionLocatorGrid motionLocatorGrid(&video_frame_buffer,
+	MotionLocBlobThresh motionLocBlobThresh(&video_frame_buffer,
            FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
-    std::cout << "Addr in main: " << &motionLocatorGrid << std::endl;
+    std::cout << "Addr in main: " << &motionLocBlobThresh << std::endl;
 	
     // Start thread for capturing background
 	pthread_t motion_location_thread;
 	if(pthread_create(&motion_location_thread,
 				NULL, 
 				&locate_motion,
-				&motionLocatorGrid)) {
+				&motionLocBlobThresh)) {
 		perror("Could not create thread to locate motion.");
 		return  -1;
 	}
@@ -115,8 +115,8 @@ int main(int argc, char** argv) {
         cv::Mat toDraw;
         (video_frame_buffer[cur_frame_i].frame).copyTo(toDraw);
         // std::cout << "center: " << motion_centers[0] << std::endl;
-        cv::Point unweighted = motionLocatorGrid.getMotionCenters(0);
-        cv::Point weighted = motionLocatorGrid.getMotionCenters(1);
+        cv::Point unweighted = motionLocBlobThresh.getMotionCenters(0);
+        cv::Point weighted = motionLocBlobThresh.getMotionCenters(1);
         cv::circle(toDraw, 
                 unweighted,
                 10,
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
                 8); // linetype
 
         cv::Mat prob_mask;
-        motionLocatorGrid.getLastProbMask(&prob_mask);
+        motionLocBlobThresh.getLastProbMask(&prob_mask);
         cv::circle(prob_mask, 
                 unweighted,
                 10,
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
             bgdCapturerSingle.
                 setBgd(video_frame_buffer[prev_frame_i].frame);
 
-            motionLocatorGrid.
+            motionLocBlobThresh.
                 setBgd(video_frame_buffer[prev_frame_i].frame);
         
             if ( (rc = pthread_rwlock_unlock(

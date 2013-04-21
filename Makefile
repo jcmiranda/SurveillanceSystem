@@ -1,5 +1,5 @@
 CC = g++
-OBJ = SurveillanceSystem.o BgdCapturerSingle.o  BgdCapturerAverage.o FrameProcessor.o MotionProbYDiff.o MotionLocatorGrid.o
+OBJ = SurveillanceSystem.o BgdCapturerSingle.o  BgdCapturerAverage.o FrameProcessor.o MotionProbYDiff.o MotionLocBlobThresh.o
 CFLAGS = -I/opt/local/include/ -Wall -c -O0 -ggdb
 LFLAGS = -L/opt/local/lib -lcvblob -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video -lpthread 
 
@@ -18,7 +18,7 @@ clean:
 FrameProcessor.o: FrameProcessor.cpp FrameProcessor.h video_frame.h
 	$(CC) $(CFLAGS) -o $@ $<
 
-MotionLocatorGrid.o: MotionLocatorGrid.cpp MotionLocatorGrid.h MotionProbYDiff.cpp MotionProbYDiff.h MotionProb.h FrameProcessor.h video_frame.h
+MotionLocBlobThresh.o: MotionLocBlobThresh.cpp MotionLocBlobThresh.h MotionProbYDiff.cpp MotionProbYDiff.h MotionProb.h FrameProcessor.h video_frame.h
 	$(CC) $(CFLAGS) -o $@ $<
 
 MotionProbYDiff.o: MotionProbYDiff.cpp MotionProbYDiff.h MotionProb.h FrameProcessor.h video_frame.h
