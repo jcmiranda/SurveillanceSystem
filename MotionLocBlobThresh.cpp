@@ -25,8 +25,10 @@ bool MotionLocBlobThresh::processFrame() {
     }
 
     mask.copyTo(_last_prob_mask);
-    
-    IplImage* thresh_ipl = new IplImage(_last_prob_mask);
+
+    cv::Mat thresh_mask;
+    cv::threshold(mask, thresh_mask, 20, 256, 0);    
+    IplImage* thresh_ipl = new IplImage(thresh_mask);
     cvLabel(thresh_ipl, 
             _label_img, 
             _motion_blobs);
