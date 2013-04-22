@@ -3,6 +3,8 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
+// When process frame is called, this thread holds rd locks on
+// _cur_frame_i and _cur_frame_i + 1
 bool MotionLocBlobThresh::processFrame() {
     cv::Mat mask(_frame_height, _frame_width, CV_8UC1,
             cv::Scalar(0));

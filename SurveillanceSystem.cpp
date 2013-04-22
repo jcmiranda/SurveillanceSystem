@@ -93,7 +93,6 @@ int main(int argc, char** argv) {
     // Intialize background capturing option
 	MotionLocBlobThresh motionLocBlobThresh(&video_frame_buffer,
            FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
-    std::cout << "Addr in main: " << &motionLocBlobThresh << std::endl;
 	
     // Start thread for capturing background
 	pthread_t motion_location_thread;

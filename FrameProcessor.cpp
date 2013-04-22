@@ -76,12 +76,12 @@ bool FrameProcessor::setBgd(const cv::Mat& bgd) {
     } 
 
     bgd.copyTo(_bgd);
+    std::cout << "New bgd set" << std::endl;
 
     if(pthread_rwlock_unlock(&_bgd_lock) != 0) {
         perror("could not release write lock to set bgd");
         return false;
     } 
-
     return true;
 }
 
