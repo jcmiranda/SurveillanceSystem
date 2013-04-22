@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "video_frame.h"
-#include "BgdCapturerSingle.h"
+#include "BgdCapturerAverage.h"
 #include "MotionLocBlobThresh.h"
 #include "cvblob.h"
 
@@ -15,14 +15,17 @@ const static int FRAME_WIDTH = 370;
 // Length of video frame buffer
 const static int FRAME_BUFLEN = 100;
 
+// Number of frames per background
+const static int FRAMES_PER_BGD = 15;
+
 // The index to which the current frame is being written
 static int cur_frame_i = 0;
 static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
 void* capture_background(void* arg) {
-	BgdCapturerSingle* bgdCapturerSingle =
-		(BgdCapturerSingle*) arg;
-    if(!bgdCapturerSingle->runInThread()) {
+	BgdCapturerAverage* bgdCapturerAverage =
+		(BgdCapturerAverage*) arg;
+    if(!bgdCapturerAverage->runInThread()) {
 		perror("Error capturing background");
 		return NULL;
 	}
@@ -65,15 +68,18 @@ int main(int argc, char** argv) {
     } 
     
     // Intialize background capturing option
-	BgdCapturerSingle bgdCapturerSingle(&video_frame_buffer,
-           FRAME_BUFLEN, FRAME_WIDTH, FRAME_HEIGHT);
+    BgdCapturerAverage bgdCapturerAverage(&video_frame_buffer,
+            FRAME_BUFLEN, 
+            FRAME_WIDTH, 
+            FRAME_HEIGHT, 
+            FRAMES_PER_BGD);
 	
     // Start thread for capturing background
 	pthread_t background_capture_thread;
 	if(pthread_create(&background_capture_thread, 
 				NULL, 
 				&capture_background, 
-				&bgdCapturerSingle)) {
+				&bgdCapturerAverage)) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
@@ -128,7 +134,7 @@ int main(int argc, char** argv) {
         motionLocBlobThresh.getLastProbMask(&prob_mask);
         
         cv::Mat bgd;
-        bgdCapturerSingle.getBgd(&bgd);
+        bgdCapturerAverage.getBgd(&bgd);
         hconcat(toDraw,
                 prob_mask,
                 toDraw);
@@ -166,7 +172,7 @@ int main(int argc, char** argv) {
 
             std::cout << "setting bgd" << std::endl;
 
-            bgdCapturerSingle.
+            bgdCapturerAverage.
                 setBgd(video_frame_buffer[prev_frame_i].frame);
 
             motionLocBlobThresh.
