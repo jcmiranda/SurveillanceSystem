@@ -77,6 +77,12 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
+   
+    cv::VideoWriter output_video;
+    const std::string filename = "output.avi";
+    int ex = CV_FOURCC('M', 'J', 'P', 'G'); // MPEG-1 codec
+    output_video.open(filename, ex, 30, cv::Size(FRAME_WIDTH,
+                FRAME_HEIGHT), true);
 
     // Intialize background capturing option
 	MotionLocBlobThresh motionLocBlobThresh(&video_frame_buffer,
@@ -138,7 +144,10 @@ int main(int argc, char** argv) {
                 toDraw);
  
         cv::imshow("livefeed", toDraw);
-        cv::imshow("livecolor", color_frame); 
+        output_video.write(color_frame);
+        //cv::imshow("livecolor", color_frame); 
+
+
         // Release write lock on this frame
         if( (rc = pthread_rwlock_unlock(this_video_frame.rw_lock)) != 0) {
             perror ("Failed to release write lock on next video frame.");

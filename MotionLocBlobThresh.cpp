@@ -27,9 +27,9 @@ bool MotionLocBlobThresh::processFrame() {
     mask.copyTo(_last_prob_mask);
 
     cv::Mat thresh_mask;
-    cv::threshold(mask, thresh_mask, 20, 256, 0);    
+    cv::threshold(mask, thresh_mask, 6, 256, 0);    
 
-    int morph_size = 10;
+    int morph_size = 4;
     cv::Mat element = cv::getStructuringElement(2, // ellipse
             cv::Size(2 * morph_size + 1, 
                 2 * morph_size + 1), 
@@ -101,6 +101,11 @@ bool MotionLocBlobThresh::annotateMatWithBlobs(cv::Mat* mat) {
             blob_frame,
             CV_BLOB_RENDER_COLOR,
             0.5);
+    cvb::cvRenderBlobs(_label_img, 
+            _motion_blobs, 
+            blob_frame, 
+            blob_frame,
+            CV_BLOB_RENDER_BOUNDING_BOX);
 
     *mat = blob_frame;
     
