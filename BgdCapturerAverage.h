@@ -14,7 +14,7 @@ class BgdCapturerAverage : public FrameProcessor {
                 int frames_per_bgd) : 
             FrameProcessor(frame_buffer, buffer_length, 
                     frame_width, frame_height),
-            _ctr(0), _step(120), _frames_per_bgd(frames_per_bgd) {
+            _ctr(0), _step(10), _frames_per_bgd(frames_per_bgd) {
                 _frames_for_bgd
                     = std::vector<cv::Mat>(_frames_per_bgd);
                 for(int i = 0; i < _frames_per_bgd; i++) {            
