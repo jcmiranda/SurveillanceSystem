@@ -14,13 +14,29 @@ bool FrameProcessor::runInThread() {
             (*_frame_buffer)[(_cur_frame_i+1) % _buffer_length ];
 
         if( (rc1 = pthread_rwlock_rdlock(frame_1.rw_lock)) > 0) {
-            perror("Unable to acquire read lock in BgdCapturerAverage");
+            perror("Unable to acquire read lock in FrameProcessor");
             return false;
         }
 
         if( (rc2 = pthread_rwlock_rdlock(frame_2.rw_lock)) > 0) {
-            perror("Unable to acquire 2nd read lock in BgdCapturerAverage");
+            perror("Unable to acquire 2nd read lock in FrameProcessor");
             return false;
+        }
+
+        // If thread should be exited, release appropriate read locks
+        // and exit the thread
+        if (frame_1.exit_thread || frame_2.exit_thread) {
+            if( (rc1 = pthread_rwlock_unlock(frame_1.rw_lock)) > 0) {
+                perror("Unable to release read lock in BgdCapturerAverage");
+                return false;
+            } 
+
+            if( (rc2 = pthread_rwlock_unlock(frame_2.rw_lock)) > 0) {
+                perror("Unable to release read lock 2 in BgdCapturerAverage");
+                return false;
+            }
+            return true;
+            
         }
 
         // New frame available

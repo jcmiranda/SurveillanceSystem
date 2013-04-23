@@ -14,6 +14,8 @@ typedef struct VideoFrame {
     // Lock for data within this videoframe (timestamp and
     // frame data) 
     pthread_rwlock_t* rw_lock;
+
+    bool exit_thread;
 } VideoFrame_t;
 
 #endif

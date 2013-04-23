@@ -60,11 +60,14 @@ int main(int argc, char** argv) {
         video_frame_buffer[i].timestamp = time_t();
         pthread_rwlock_t* rw_lock = 
             (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
+        
         // TODO: check attr for initialization
         if( (rc = pthread_rwlock_init(rw_lock, NULL)) != 0) {
             perror("rwlock initialization failed.");
         }
-      video_frame_buffer[i].rw_lock = rw_lock; 
+        video_frame_buffer[i].rw_lock = rw_lock; 
+
+        video_frame_buffer[i].exit_thread = false;
     } 
     
     // Intialize background capturing option
@@ -183,9 +186,38 @@ int main(int argc, char** argv) {
             perror ("Failed to release read lock on video frame to capture as bgd.");
             }
         } else if (key >= 0) {
-            break;
-        }
+            if( (rc = pthread_rwlock_wrlock(
+                            video_frame_buffer[prev_frame_i].rw_lock)) != 0) {
+                perror ("Failed to acquire write lock on prev video frame.");
+            }
+            if( (rc = pthread_rwlock_wrlock(
+                            video_frame_buffer[cur_frame_i].rw_lock)) != 0) {
+                perror ("Failed to acquire write lock on cur video frame.");
+            }
+            
+            // TODO: check if these both refer to same frame
+            video_frame_buffer[prev_frame_i].exit_thread = true;
+            video_frame_buffer[cur_frame_i].exit_thread = true; 
+            
+            if( (rc = pthread_rwlock_unlock(
+                            video_frame_buffer[prev_frame_i].rw_lock)) != 0) {
+                perror ("Failed to acquire write lock on prev video frame.");
+            }
+            if( (rc = pthread_rwlock_unlock(
+                            video_frame_buffer[cur_frame_i].rw_lock)) != 0) {
+                perror ("Failed to acquire write lock on cur video frame.");
+            }
+            break; 
+        } 
     } 
+    
+    if ( (rc = pthread_join(background_capture_thread, NULL)) != 0) {
+        perror("Background capture thread did not join.");
+    }
+
+    if ( (rc = pthread_join(motion_location_thread, NULL)) != 0) {
+        perror("Motion location thread did not join.");
+    }
  
    // TODO: notify background capture thread that it should end
    // TODO: add join for background capture thread
