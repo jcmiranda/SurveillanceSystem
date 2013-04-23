@@ -22,6 +22,8 @@ const static int FRAMES_PER_BGD = 15;
 static int cur_frame_i = 0;
 static std::vector<VideoFrame_t> video_frame_buffer(sizeof(VideoFrame_t));
 
+// Background capture thread
+// Will have access to data in video_frame_buffer 
 void* capture_background(void* arg) {
 	BgdCapturerAverage* bgdCapturerAverage =
 		(BgdCapturerAverage*) arg;
@@ -32,6 +34,9 @@ void* capture_background(void* arg) {
 	return NULL;	
 }
 
+// Motion location thread
+// Will have access to data in video_frame_buffer
+// Thread is responsible for r/w locking on data it wants to read/modify
 void* locate_motion(void* arg) {
 	MotionLocBlobThresh* motionLocBlobThresh =
 		(MotionLocBlobThresh*) arg;
@@ -55,18 +60,26 @@ int main(int argc, char** argv) {
    int rc = 0; 
    // Initialize frame buffer 
     for(int i = 0; i < FRAME_BUFLEN; i++) {
+        // Initialize frame to empty frame of correct size
         video_frame_buffer[i].frame = 
             cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        
+        // Empty timestamp
         video_frame_buffer[i].timestamp = time_t();
+        
+        // Malloc rwlock to be associated with all data in this frame
+        // and initialize rwlock
         pthread_rwlock_t* rw_lock = 
             (pthread_rwlock_t*) malloc(sizeof(pthread_rwlock_t));
-        
         // TODO: check attr for initialization
         if( (rc = pthread_rwlock_init(rw_lock, NULL)) != 0) {
             perror("rwlock initialization failed.");
         }
         video_frame_buffer[i].rw_lock = rw_lock; 
 
+        // Set variable for signaling other threads to exit when
+        // main thread wants to exit
+        // TODO: look into pthread condition variables
         video_frame_buffer[i].exit_thread = false;
     } 
     
