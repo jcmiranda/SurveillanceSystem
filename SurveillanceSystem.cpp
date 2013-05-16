@@ -14,6 +14,7 @@
 #include "BgdCapturerAverage.h"
 #include "MotionLocBlobThresh.h"
 #include "cvblob.h"
+#include "IPCamProcessor.h"
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
@@ -36,6 +37,18 @@ void* capture_background(void* arg) {
 		(BgdCapturerAverage*) arg;
     if(!bgdCapturerAverage->runInThread()) {
 		perror("Error capturing background");
+		return NULL;
+	}
+	return NULL;	
+}
+
+// Background capture thread
+// Will have access to data in video_frame_buffer 
+void* run_ip_cam(void* arg) {
+	IPCamProcessor* ipCamProcessor =
+		(IPCamProcessor*) arg;
+    if(!ipCamProcessor->runInThread()) {
+		perror("Error running ip cam capture");
 		return NULL;
 	}
 	return NULL;	
@@ -106,6 +119,19 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
+    
+    // Intialize IP Cam capturing class
+    IPCamProcessor ipCamProcessor(FRAME_WIDTH, FRAME_HEIGHT);
+	
+    // Start thread for capturing background
+	pthread_t ip_cam_thread;
+	if(pthread_create(&ip_cam_thread,
+				NULL, 
+				&run_ip_cam,
+				&ipCamProcessor)) {
+		perror("Could not create thread to capture ip cam feed.");
+		return  -1;
+	}
   
     /* 
        cv::VideoWriter output_video;
@@ -147,14 +173,14 @@ int main(int argc, char** argv) {
        
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
        
-        int i = 0;
-        i = system("wget -q http://192.168.2.30/cgi-bin/viewer/video.jpg");
-        sleep(0.05);
-        cv::Mat fromIPCam = cv::imread("video.jpg");
+        //int i = 0;
+        //i = system("wget -q http://192.168.2.30/cgi-bin/viewer/video.jpg");
+        //sleep(0.05);
+        //cv::Mat fromIPCam = cv::imread("video.jpg");
         // std::cout << fromIPCam.size() << std::endl;
         
         // cvtColor(fromIPCam, fromIPCam, CV_BGR2GRAY);
-        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT, 
+        /*cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT, 
                 FRAME_WIDTH, 
                 CV_8UC1, 
                 cv::Scalar(0));
@@ -162,7 +188,7 @@ int main(int argc, char** argv) {
                 fromIPCamScaled,
                 video_frame_buffer[cur_frame_i].frame.size()); 
         cvtColor(fromIPCamScaled, fromIPCamScaled, CV_BGR2GRAY);
-
+*/
         cv::Mat color_frame;
         (video_frame_buffer[cur_frame_i].frame).copyTo(color_frame);
         cvtColor(video_frame_buffer[cur_frame_i].frame, 
@@ -191,10 +217,10 @@ int main(int argc, char** argv) {
         //        y_frame_with_blobs,
         //        toDraw);
 
+        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT,
+                FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        ipCamProcessor.getFrame(&fromIPCamScaled);
         hconcat(toDraw, fromIPCamScaled, toDraw);
-        
-        i = system("echo \"1\" >> log.txt");
-        i = system("rm video.jpg");
  
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
