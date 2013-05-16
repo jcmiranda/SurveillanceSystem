@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
-	cv::namedWindow("livecolor", 1);	
+	// cv::namedWindow("livecolor", 1);	
 
     // Stream video
     for(;;) {
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
  
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
-        cv::imshow("livecolor", color_frame); 
+        // cv::imshow("livecolor", color_frame); 
 
 
         // Release write lock on this frame
