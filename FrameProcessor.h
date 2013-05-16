@@ -23,7 +23,7 @@ class FrameProcessor {
             _cur_frame_i(0) {
                 int rc = 0;
                 if( (rc = pthread_rwlock_init(&_bgd_lock, NULL)) != 0) {
-                    perror("rwlock initialization failed in bgd capturer constructor.");
+                    perror("rwlock initialization failed in FrameProcessor constructor.");
                 }
             }; 
 
