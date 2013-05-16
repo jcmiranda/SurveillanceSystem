@@ -3,6 +3,13 @@
 #include <pthread.h>
 #include <vector>
 
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "video_frame.h"
 #include "BgdCapturerAverage.h"
 #include "MotionLocBlobThresh.h"
@@ -125,6 +132,8 @@ int main(int argc, char** argv) {
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
 	// cv::namedWindow("livecolor", 1);	
+    
+    cURLpp::Cleanup myCleanup;
 
     // Stream video
     for(;;) {
@@ -137,11 +146,27 @@ int main(int argc, char** argv) {
         }
        
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
+       
+        int i = 0;
+        i = system("wget -q http://192.168.2.30/cgi-bin/viewer/video.jpg");
+        sleep(0.05);
+        cv::Mat fromIPCam = cv::imread("video.jpg");
+        // std::cout << fromIPCam.size() << std::endl;
+        
+        // cvtColor(fromIPCam, fromIPCam, CV_BGR2GRAY);
+        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT, 
+                FRAME_WIDTH, 
+                CV_8UC1, 
+                cv::Scalar(0));
+        cv::resize(fromIPCam, 
+                fromIPCamScaled,
+                video_frame_buffer[cur_frame_i].frame.size()); 
+        cvtColor(fromIPCamScaled, fromIPCamScaled, CV_BGR2GRAY);
+
         cv::Mat color_frame;
         (video_frame_buffer[cur_frame_i].frame).copyTo(color_frame);
         cvtColor(video_frame_buffer[cur_frame_i].frame, 
                 video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
-
 
         time(&video_frame_buffer[cur_frame_i].timestamp);
         cv::Mat toDraw;
@@ -162,9 +187,14 @@ int main(int argc, char** argv) {
         motionLocBlobThresh.annotateMatWithBlobs(&color_frame);
         cv::Mat y_frame_with_blobs;
         cvtColor(color_frame, y_frame_with_blobs, CV_BGR2GRAY);
-        hconcat(toDraw,
-                y_frame_with_blobs,
-                toDraw);
+        //hconcat(toDraw,
+        //        y_frame_with_blobs,
+        //        toDraw);
+
+        hconcat(toDraw, fromIPCamScaled, toDraw);
+        
+        i = system("echo \"1\" >> log.txt");
+        i = system("rm video.jpg");
  
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
