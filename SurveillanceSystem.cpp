@@ -13,6 +13,7 @@
 #include "video_frame.h"
 #include "BgdCapturerAverage.h"
 #include "MotionLocBlobThresh.h"
+#include "IPCamProcessor.h"
 #include "cvblob.h"
 
 // Height and width of frame in pixels
@@ -36,6 +37,18 @@ void* capture_background(void* arg) {
 		(BgdCapturerAverage*) arg;
     if(!bgdCapturerAverage->runInThread()) {
 		perror("Error capturing background");
+		return NULL;
+	}
+	return NULL;	
+}
+
+// IP Camera capture and annotation thread
+// Will have access to data in video_frame_buffer 
+void* run_ip_cam(void* arg) {
+	IPCamProcessor* ipCamProcessor =
+		(IPCamProcessor*) arg;
+    if(!ipCamProcessor->runInThread()) {
+		perror("Error running ip cam capture");
 		return NULL;
 	}
 	return NULL;	
@@ -113,7 +126,23 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
-   
+    
+    // Intialize IP Cam capturing class
+    IPCamProcessor ipCamProcessor(&video_frame_buffer,
+            FRAME_BUFLEN,
+            FRAME_WIDTH, 
+            FRAME_HEIGHT);
+
+    // Start thread for capturing background
+    pthread_t ip_cam_thread;
+    if(pthread_create(&ip_cam_thread,
+                NULL, 
+                &run_ip_cam,
+                &ipCamProcessor)) {
+        perror("Could not create thread to capture ip cam feed.");
+        return  -1;
+    } 
+    
     /* 
        cv::VideoWriter output_video;
        const std::string filename = "output.avi";
@@ -160,9 +189,9 @@ int main(int argc, char** argv) {
             perror ("Failed to acquire write lock on next video frame.");
         }
        
-        video_cap >> video_frame_buffer[cur_frame_i].frame; 
+        video_cap >> video_frame_buffer[cur_frame_i].color_frame; 
    
-        video_cap_ip >> video_frame_buffer[cur_frame_i].ip_frame;
+        video_cap_ip >> video_frame_buffer[cur_frame_i].color_ip_frame;
         //if (!video_cap_ip.read(fromIP)) {
         //   std::cout << "no frame" << std::endl;
         //    cv::waitKey();
@@ -173,8 +202,8 @@ int main(int argc, char** argv) {
         //        cv::Size(FRAME_WIDTH, FRAME_HEIGHT));
 
         cv::Mat color_frame;
-        (video_frame_buffer[cur_frame_i].frame).copyTo(color_frame);
-        cvtColor(video_frame_buffer[cur_frame_i].frame, 
+        (video_frame_buffer[cur_frame_i].color_frame).copyTo(color_frame);
+        cvtColor(video_frame_buffer[cur_frame_i].color_frame, 
                 video_frame_buffer[cur_frame_i].frame, CV_BGR2GRAY);
 
         time(&video_frame_buffer[cur_frame_i].timestamp);
@@ -201,10 +230,15 @@ int main(int argc, char** argv) {
         //        toDraw);
         // std::cout << "IP: " << fromIP.size() << std::endl;
         // std::cout << "prob mask: " << prob_mask.size() << std::endl;
-        cvtColor(video_frame_buffer[cur_frame_i].ip_frame, 
-                video_frame_buffer[cur_frame_i].ip_frame, CV_BGR2GRAY);
-        hconcat(toDraw, video_frame_buffer[cur_frame_i].ip_frame, toDraw);
- 
+        cvtColor(video_frame_buffer[cur_frame_i].color_ip_frame, 
+                video_frame_buffer[cur_frame_i].ip_frame, 
+                CV_BGR2GRAY);
+        // hconcat(toDraw, video_frame_buffer[cur_frame_i].ip_frame, toDraw);
+
+        cv::Mat annotated_features;
+        ipCamProcessor.getLastPair(&annotated_features);
+        hconcat(toDraw, annotated_features, toDraw);
+
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
         // cv::imshow("livecolor", color_frame); 
