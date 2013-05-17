@@ -62,7 +62,7 @@ bool IPCamProcessor::processFrame() {
     std::vector< DMatch > good_matches;
 
     for( int i = 0; i < descriptors_1.rows; i++ )
-    { if( matches[i].distance < 2*min_dist )
+    { if( matches[i].distance < 2.5*min_dist )
         { good_matches.push_back( matches[i]); }
     }
 
@@ -73,7 +73,22 @@ bool IPCamProcessor::processFrame() {
             vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     cvtColor(img_matches, img_matches, CV_BGR2GRAY);
- 
+  
+   /* 
+    //-- Localize the object
+    std::vector<Point2f> obj;
+    std::vector<Point2f> scene;
+
+    for( int i = 0; i < good_matches.size(); i++ ) {
+        //-- Get the keypoints from the good matches
+        obj.push_back( keypoints_1[ good_matches[i].queryIdx ].pt );
+        scene.push_back( keypoints_2[ good_matches[i].trainIdx ].pt );
+    }
+
+    if (good_matches.size() > 3) {
+        _H = findHomography( obj, scene, CV_RANSAC );    
+    } */
+
     // getting access to motion blobs in right location 
     cvb::CvBlobs motion_blobs; 
     _motion_loc_blob_thresh->getLastMotionBlobs(&motion_blobs);
@@ -91,10 +106,114 @@ bool IPCamProcessor::processFrame() {
         miny = (int) it->second->miny;
         maxx = (int) it->second->maxx;
         maxy = (int) it->second->maxy;
-        std::cout << "Blob #" << it->second->label << 
-            ": X" << minx << " " << maxx << " Y" <<
-            miny << " " << maxy << std::endl;
-    }
+        
+        int ip_centerx = 0;
+        int ip_centery = 0;
+
+        int count = 0; 
+       
+       // Iterate over good matches and take the locations of the ones 
+       // look up their location in the ip camera frame 
+        for (int i = 0; i < good_matches.size(); i++) {
+            int img_idx_1 = good_matches[i].queryIdx;
+            cv::Point frame_pt =  keypoints_1[img_idx_1].pt;
+       
+            if(frame_pt.x > minx && frame_pt.x < maxx &&
+                    frame_pt.y > miny && frame_pt.y < maxy) {
+                count++;
+                int img_idx_2 = good_matches[i].trainIdx;
+                cv::Point ip_frame_pt =  keypoints_2[img_idx_2].pt;
+                /*
+                if (ip_frame_pt.x < ip_minx) { 
+                    ip_minx = ip_frame_pt.x;
+                }
+                if (ip_frame_pt.x > ip_maxx) { 
+                    ip_maxx = ip_frame_pt.x;
+                }
+                if (ip_frame_pt.y < ip_miny) { 
+                    ip_miny = ip_frame_pt.y;
+                }
+                if (ip_frame_pt.y > ip_maxy) { 
+                    ip_maxy = ip_frame_pt.y;
+                } */
+
+                ip_centerx += ip_frame_pt.x;
+                ip_centery += ip_frame_pt.y;
+            }
+        }
+        if (count > 0)  {
+            ip_centerx = ip_centerx/count;
+            ip_centery = ip_centery/count;
+            _ip_center_x = ip_centerx;
+            _ip_center_y = ip_centery;
+        }
+        cv::circle(img_matches, cv::Point(_ip_center_x + _frame_width,
+                    _ip_center_y), 5, 255, 2, 8);
+        
+        cv::rectangle(img_matches, cv::Point(minx, miny),
+                  cv::Point(maxx, maxy),
+              255,
+            3,
+          8);  
+
+       // int ip_minx = 1000;
+        //int ip_miny = 1000;
+        //int ip_maxx = 0;
+        //int ip_maxy = 0;
+
+
+        /*
+        //-- Get the corners from the image_1 ( the object to be "detected" )
+        std::vector<Point2f> obj_corners(4);
+        obj_corners[0] = cv::Point(minx, miny); // cvPoint(0,0); 
+        obj_corners[1] = cv::Point(maxx, miny); // cvPoint( img_object.cols, 0 );
+        obj_corners[2] = cv::Point(maxx, maxy); // cvPoint( img_object.cols, img_object.rows ); 
+        obj_corners[3] = cv::Point(minx, maxy); // cvPoint( 0, img_object.rows );
+        
+        std::vector<Point2f> scene_corners(4);
+
+        perspectiveTransform( obj_corners, scene_corners, _H);
+
+        cv::Point2f offset = cv::Point2f(_frame_width, 0);
+        //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+        line( img_matches, 
+                scene_corners[0]  + offset, //+ Point2f( img_object.cols, 0), 
+                scene_corners[1] + offset, // Point2f( img_object.cols, 0), 
+                Scalar(0, 255, 0), 4 );
+        line( img_matches, 
+                scene_corners[1] + offset, // img_object.cols, 0), 
+                scene_corners[2] + offset, // Point2f(_img_width, 0); // Point2f( img_object.cols, 0), 
+                Scalar( 0, 255, 0), 4 );
+        line( img_matches, 
+                scene_corners[2] + offset, // Point2f( img_object.cols, 0), 
+                scene_corners[3] + offset, // Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+                Scalar( 0, 255, 0), 4 );
+        line( img_matches, 
+                scene_corners[3] + offset, // Point2f( img_object.cols, 0), 
+                scene_corners[0] + offset, 
+                Scalar( 0, 255, 0), 4 ); */
+    } 
+
+        /*
+        
+        cv::rectangle(img_matches, cv::Point(minx, miny),
+                  cv::Point(maxx, maxy),
+              255,
+            3,
+          8);  
+
+        cv::rectangle(img_matches, cv::Point(ip_minx+_frame_width, 
+                  ip_miny), cv::Point(ip_maxx + _frame_width, ip_maxy),
+              255,
+            3,
+          8);  
+
+        std::cout << "Count: " << count; 
+        // std::cout << "Blob #" << it->second->label << 
+        //   ": X" << minx << " " << maxx << " Y" <<
+        //    miny << " " << maxy << std::endl;
+        //    
+    } */
 
     int rc = 0;
     if( (rc = pthread_rwlock_wrlock(&_last_pair_lock)) != 0) {

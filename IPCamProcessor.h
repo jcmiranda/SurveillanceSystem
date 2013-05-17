@@ -21,12 +21,15 @@ class IPCamProcessor : public FrameProcessor {
                         2*frame_width, 
                         CV_8UC1, 
                         cv::Scalar(0))),
+            _ip_center_x(0), _ip_center_y(0),
    _motion_loc_blob_thresh(motion_loc_blob_thresh) {
                 int rc = 0;
                 if( (rc = pthread_rwlock_init(&_last_pair_lock, 
                                 NULL)) != 0) {
                     perror("rwlock initialization failed in ip cam processor constructor.");
                 }
+
+                // _H = cv::Mat(3, 3, CV_32FC1, cv::Scalar(0));
             };
 
         ~IPCamProcessor() {
@@ -38,6 +41,11 @@ class IPCamProcessor : public FrameProcessor {
         
     private:
         cv::Mat _last_pair;
+        int _ip_center_x;
+        int _ip_center_y;
+
+        // Homography matrix
+        // cv::Mat _H;
         MotionLocBlobThresh* _motion_loc_blob_thresh;
         pthread_rwlock_t _last_pair_lock;
 };
