@@ -42,18 +42,6 @@ void* capture_background(void* arg) {
 	return NULL;	
 }
 
-// Background capture thread
-// Will have access to data in video_frame_buffer 
-void* run_ip_cam(void* arg) {
-	IPCamProcessor* ipCamProcessor =
-		(IPCamProcessor*) arg;
-    if(!ipCamProcessor->runInThread()) {
-		perror("Error running ip cam capture");
-		return NULL;
-	}
-	return NULL;	
-}
-
 // Motion location thread
 // Will have access to data in video_frame_buffer
 // Thread is responsible for r/w locking on data it wants to read/modify
@@ -75,7 +63,17 @@ int main(int argc, char** argv) {
 				video_cap.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT))) {
 		perror("Can not set frame width and height");
 	}
-	
+    
+    const std::string ipStreamAddress = "http://192.168.2.30/video.mjpg";
+    // Capture default webcam feed
+    cv::VideoCapture video_cap_ip;
+    if(!video_cap_ip.open(ipStreamAddress)) {
+        std::cout << "error opening ip video stream" << std::endl;
+        return -1;
+    }
+    
+    std::cout << "after opening video stream" << std::endl;
+
    // Return code for initializing rwlocks 
    int rc = 0; 
    // Initialize frame buffer 
@@ -119,7 +117,8 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture background.");
 		return  -1;
 	}
-    
+   
+   /* 
     // Intialize IP Cam capturing class
     IPCamProcessor ipCamProcessor(FRAME_WIDTH, FRAME_HEIGHT);
 	
@@ -132,7 +131,7 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to capture ip cam feed.");
 		return  -1;
 	}
-  
+ */ 
     /* 
        cv::VideoWriter output_video;
        const std::string filename = "output.avi";
@@ -172,7 +171,22 @@ int main(int argc, char** argv) {
         }
        
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
-       
+   
+        cv::Mat fromIP;
+        if (!video_cap_ip.read(fromIP)) {
+            std::cout << "no frame" << std::endl;
+            cv::waitKey();
+        }
+        
+        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT, 
+                FRAME_WIDTH, 
+                CV_8UC1, 
+                cv::Scalar(0));
+        cv::resize(fromIP, 
+                fromIPCamScaled,
+                fromIPCamScaled.size());
+        cvtColor(fromIPCamScaled, fromIPCamScaled, CV_BGR2GRAY);
+
         //int i = 0;
         //i = system("wget -q http://192.168.2.30/cgi-bin/viewer/video.jpg");
         //sleep(0.05);
@@ -217,9 +231,9 @@ int main(int argc, char** argv) {
         //        y_frame_with_blobs,
         //        toDraw);
 
-        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT,
-                FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
-        ipCamProcessor.getFrame(&fromIPCamScaled);
+        // cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT,
+        //        FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        // ipCamProcessor.getFrame(&fromIPCamScaled);
         hconcat(toDraw, fromIPCamScaled, toDraw);
  
         cv::imshow("livefeed", toDraw);
