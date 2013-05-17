@@ -9,6 +9,7 @@
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/nonfree/features2d.hpp"
+#include "cvblob.h"
 
 using namespace std;
 using namespace cv;
@@ -72,7 +73,11 @@ bool IPCamProcessor::processFrame() {
             vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     cvtColor(img_matches, img_matches, CV_BGR2GRAY);
-    
+ 
+    // getting access to motion blobs in right location 
+    cvb::CvBlobs motion_blobs; 
+    _motion_loc_blob_thresh->getLastMotionBlobs(&motion_blobs);
+
     int rc = 0;
     if( (rc = pthread_rwlock_wrlock(&_last_pair_lock)) != 0) {
         perror("unable to lock on last pair.");

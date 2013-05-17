@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "video_frame.h"
+#include "MotionLocBlobThresh.h"
 #include "FrameProcessor.h"
 
 class IPCamProcessor : public FrameProcessor {
@@ -12,13 +13,15 @@ class IPCamProcessor : public FrameProcessor {
         IPCamProcessor(std::vector<VideoFrame_t>* frame_buffer,
                 int buffer_length, 
                 int frame_width, 
-                int frame_height) :
+                int frame_height,
+                MotionLocBlobThresh* motion_loc_blob_thresh) :
             FrameProcessor(frame_buffer, buffer_length,
                     frame_width, frame_height), 
             _last_pair(cv::Mat(frame_height, 
                         2*frame_width, 
                         CV_8UC1, 
-                        cv::Scalar(0))) {
+                        cv::Scalar(0))),
+   _motion_loc_blob_thresh(motion_loc_blob_thresh) {
                 int rc = 0;
                 if( (rc = pthread_rwlock_init(&_last_pair_lock, 
                                 NULL)) != 0) {
@@ -35,7 +38,7 @@ class IPCamProcessor : public FrameProcessor {
         
     private:
         cv::Mat _last_pair;
-
+        MotionLocBlobThresh* _motion_loc_blob_thresh;
         pthread_rwlock_t _last_pair_lock;
 };
 

@@ -135,21 +135,6 @@ int main(int argc, char** argv) {
 		return  -1;
 	}
     
-    // Intialize IP Cam capturing class
-    IPCamProcessor ipCamProcessor(&video_frame_buffer,
-            FRAME_BUFLEN,
-            FRAME_WIDTH, 
-            FRAME_HEIGHT);
-
-    // Start thread for capturing background
-    pthread_t ip_cam_thread;
-    if(pthread_create(&ip_cam_thread,
-                NULL, 
-                &run_ip_cam,
-                &ipCamProcessor)) {
-        perror("Could not create thread to capture ip cam feed.");
-        return  -1;
-    } 
     
     /* 
        cv::VideoWriter output_video;
@@ -172,6 +157,23 @@ int main(int argc, char** argv) {
 		perror("Could not create thread to locate motion.");
 		return  -1;
 	}
+    
+    // Intialize IP Cam capturing class
+    IPCamProcessor ipCamProcessor(&video_frame_buffer,
+            FRAME_BUFLEN,
+            FRAME_WIDTH, 
+            FRAME_HEIGHT,
+            &motionLocBlobThresh);
+
+    // Start thread for capturing background
+    pthread_t ip_cam_thread;
+    if(pthread_create(&ip_cam_thread,
+                NULL, 
+                &run_ip_cam,
+                &ipCamProcessor)) {
+        perror("Could not create thread to capture ip cam feed.");
+        return  -1;
+    } 
 	
     // Display live video feed window
 	cv::namedWindow("livefeed", 1);	
