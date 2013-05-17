@@ -78,6 +78,12 @@ bool IPCamProcessor::processFrame() {
     cvb::CvBlobs motion_blobs; 
     _motion_loc_blob_thresh->getLastMotionBlobs(&motion_blobs);
 
+    for (cvb::CvBlobs::const_iterator it=motion_blobs.begin(); it!=motion_blobs.end(); ++it)
+    {
+        std::cout << "Blob #" << it->second->label << 
+            ": Area=" << it->second->area << std::endl;
+    }
+
     int rc = 0;
     if( (rc = pthread_rwlock_wrlock(&_last_pair_lock)) != 0) {
         perror("unable to lock on last pair.");
