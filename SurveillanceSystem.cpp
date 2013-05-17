@@ -18,7 +18,7 @@
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
-const static int FRAME_WIDTH = 370;
+const static int FRAME_WIDTH = 352;
 
 // Length of video frame buffer
 const static int FRAME_BUFLEN = 100;
@@ -164,14 +164,10 @@ int main(int argc, char** argv) {
             cv::waitKey();
         }
         
-        cv::Mat fromIPCamScaled = cv::Mat(FRAME_HEIGHT, 
-                FRAME_WIDTH, 
-                CV_8UC1, 
-                cv::Scalar(0));
-        cv::resize(fromIP, 
-                fromIPCamScaled,
-                fromIPCamScaled.size());
-        cvtColor(fromIPCamScaled, fromIPCamScaled, CV_BGR2GRAY);
+        //cv::resize(fromIP, 
+        //        fromIP,
+        //        cv::Size(FRAME_WIDTH, FRAME_HEIGHT));
+        cvtColor(fromIP, fromIP, CV_BGR2GRAY);
 
         cv::Mat color_frame;
         (video_frame_buffer[cur_frame_i].frame).copyTo(color_frame);
@@ -200,8 +196,9 @@ int main(int argc, char** argv) {
         //hconcat(toDraw,
         //        y_frame_with_blobs,
         //        toDraw);
-
-        hconcat(toDraw, fromIPCamScaled, toDraw);
+        //std::cout << "IP: " << fromIP.size() << std::endl;
+        //std::cout << "prob mask: " << prob_mask.size() << std::endl;
+        hconcat(toDraw, fromIP, toDraw);
  
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
