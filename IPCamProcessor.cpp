@@ -2,9 +2,14 @@
 
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
 
 #include <stdio.h>
 #include <iostream>
+#include <stdlib.h>
+
 #include "opencv2/core/core.hpp"
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -100,8 +105,8 @@ bool IPCamProcessor::processFrame() {
 
     for (cvb::CvBlobs::const_iterator it=motion_blobs.begin(); it!=motion_blobs.end(); ++it)
     {
-        std::cout << "Blob #" << it->second->label << 
-            ": Area=" << it->second->area << std::endl;
+        //std::cout << "Blob #" << it->second->label << 
+        //    ": Area=" << it->second->area << std::endl;
         minx = (int) it->second->minx;
         miny = (int) it->second->miny;
         maxx = (int) it->second->maxx;
@@ -123,6 +128,95 @@ bool IPCamProcessor::processFrame() {
                 count++;
                 int img_idx_2 = good_matches[i].trainIdx;
                 cv::Point ip_frame_pt =  keypoints_2[img_idx_2].pt;
+
+                ip_centerx += ip_frame_pt.x;
+                ip_centery += ip_frame_pt.y;
+            }
+        }
+        if (count > 0)  {
+            ip_centerx = ip_centerx/count;
+            ip_centery = ip_centery/count;
+            if (ip_centerx > _ip_center_x) 
+                _ip_center_x = min(_ip_center_x + _ip_center_step, ip_centerx);
+            else
+                _ip_center_x = max(_ip_center_x - _ip_center_step, ip_centerx);
+            
+            if (ip_centery > _ip_center_y) 
+                _ip_center_y = min(_ip_center_y + _ip_center_step, ip_centery);
+            else
+                _ip_center_y = max(_ip_center_y - _ip_center_step, ip_centery);
+        }
+
+// http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?&move=home
+        // Want to move camera to re center
+        if (abs(_ip_center_x - _frame_width/2) > _ip_radius) {
+            cURLpp::Easy myRequest;
+            std::stringstream result;
+            if(_ip_center_x - _frame_width/2 < 0) {
+                myRequest.setOpt(
+                        cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=left"));
+                std::cout << "left" << std::endl;
+            } else {
+                myRequest.setOpt(cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=right"));
+                std::cout << "right" << std::endl;
+            }
+            myRequest.setOpt(cURLpp::Options::WriteStream(&result));
+            myRequest.perform();                    
+
+        } else if (abs(_ip_center_y - _frame_height/2) > _ip_radius) {
+            cURLpp::Easy myRequest;
+            std::stringstream result;
+            if(_ip_center_y - _frame_height/2 < 0) {
+                myRequest.setOpt(cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=up"));
+                std::cout << "up" << std::endl;
+            } else {
+                myRequest.setOpt(cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=down"));
+                std::cout << "down" << std::endl;
+            }
+            myRequest.setOpt(cURLpp::Options::WriteStream(&result));
+            myRequest.perform();                    
+
+        }
+        
+        cv::circle(img_matches, cv::Point(_ip_center_x + _frame_width,
+                    _ip_center_y), 5, 255, 2, 8);
+        
+        cv::rectangle(img_matches, cv::Point(minx, miny),
+                  cv::Point(maxx, maxy),
+              255,
+            3,
+          8);  
+
+    } 
+
+    int rc = 0;
+    if( (rc = pthread_rwlock_wrlock(&_last_pair_lock)) != 0) {
+        perror("unable to lock on last pair.");
+    }
+
+    img_matches.copyTo(_last_pair);
+
+    if( (rc = pthread_rwlock_unlock(&_last_pair_lock)) != 0) {
+        perror("unable to unlock on last pair.");
+    }
+    return true;
+}
+
+bool IPCamProcessor::getLastPair(cv::Mat* dst) {
+    int rc = 0;
+    if( (rc = pthread_rwlock_rdlock(&_last_pair_lock)) != 0) {
+        perror("unable to lock on last pair.");
+    }
+
+    _last_pair.copyTo(*dst);
+
+    if( (rc = pthread_rwlock_unlock(&_last_pair_lock)) != 0) {
+        perror("unable to unlock on last pair.");
+    }
+    return true;
+}
+
+// IP Camera Homography code
                 /*
                 if (ip_frame_pt.x < ip_minx) { 
                     ip_minx = ip_frame_pt.x;
@@ -136,26 +230,6 @@ bool IPCamProcessor::processFrame() {
                 if (ip_frame_pt.y > ip_maxy) { 
                     ip_maxy = ip_frame_pt.y;
                 } */
-
-                ip_centerx += ip_frame_pt.x;
-                ip_centery += ip_frame_pt.y;
-            }
-        }
-        if (count > 0)  {
-            ip_centerx = ip_centerx/count;
-            ip_centery = ip_centery/count;
-            _ip_center_x = ip_centerx;
-            _ip_center_y = ip_centery;
-        }
-        cv::circle(img_matches, cv::Point(_ip_center_x + _frame_width,
-                    _ip_center_y), 5, 255, 2, 8);
-        
-        cv::rectangle(img_matches, cv::Point(minx, miny),
-                  cv::Point(maxx, maxy),
-              255,
-            3,
-          8);  
-
        // int ip_minx = 1000;
         //int ip_miny = 1000;
         //int ip_maxx = 0;
@@ -192,52 +266,4 @@ bool IPCamProcessor::processFrame() {
                 scene_corners[3] + offset, // Point2f( img_object.cols, 0), 
                 scene_corners[0] + offset, 
                 Scalar( 0, 255, 0), 4 ); */
-    } 
-
-        /*
-        
-        cv::rectangle(img_matches, cv::Point(minx, miny),
-                  cv::Point(maxx, maxy),
-              255,
-            3,
-          8);  
-
-        cv::rectangle(img_matches, cv::Point(ip_minx+_frame_width, 
-                  ip_miny), cv::Point(ip_maxx + _frame_width, ip_maxy),
-              255,
-            3,
-          8);  
-
-        std::cout << "Count: " << count; 
-        // std::cout << "Blob #" << it->second->label << 
-        //   ": X" << minx << " " << maxx << " Y" <<
-        //    miny << " " << maxy << std::endl;
-        //    
-    } */
-
-    int rc = 0;
-    if( (rc = pthread_rwlock_wrlock(&_last_pair_lock)) != 0) {
-        perror("unable to lock on last pair.");
-    }
-
-    img_matches.copyTo(_last_pair);
-
-    if( (rc = pthread_rwlock_unlock(&_last_pair_lock)) != 0) {
-        perror("unable to unlock on last pair.");
-    }
-    return true;
-}
-
-bool IPCamProcessor::getLastPair(cv::Mat* dst) {
-    int rc = 0;
-    if( (rc = pthread_rwlock_rdlock(&_last_pair_lock)) != 0) {
-        perror("unable to lock on last pair.");
-    }
-
-    _last_pair.copyTo(*dst);
-
-    if( (rc = pthread_rwlock_unlock(&_last_pair_lock)) != 0) {
-        perror("unable to unlock on last pair.");
-    }
-    return true;
-}
+//

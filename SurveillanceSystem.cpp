@@ -180,7 +180,6 @@ int main(int argc, char** argv) {
 	// cv::namedWindow("livecolor", 1);	
     
     cURLpp::Cleanup myCleanup;
-    
 
     // Stream video
     for(;;) {
@@ -204,7 +203,7 @@ int main(int argc, char** argv) {
         video_cap_ip.retrieve(video_frame_buffer[cur_frame_i].color_ip_frame);
         //if (!video_cap_ip.read(fromIP)) {
         //   std::cout << "no frame" << std::endl;
-        //    cv::waitKey();
+        //    cv:::waitKey();
         //}
         
         //cv::resize(fromIP, 
