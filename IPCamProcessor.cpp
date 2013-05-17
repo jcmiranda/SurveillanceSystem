@@ -61,7 +61,7 @@ bool IPCamProcessor::processFrame() {
     std::vector< DMatch > good_matches;
 
     for( int i = 0; i < descriptors_1.rows; i++ )
-    { if( matches[i].distance < 3*min_dist )
+    { if( matches[i].distance < 2*min_dist )
         { good_matches.push_back( matches[i]); }
     }
 

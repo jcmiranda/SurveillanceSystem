@@ -76,6 +76,14 @@ int main(int argc, char** argv) {
 		perror("Can not set frame width and height");
 	}
     
+    const std::string ipStreamAddress = "http://192.168.2.30/video.mjpg";
+    // Capture default webcam feed
+    cv::VideoCapture video_cap_ip;
+    if(!video_cap_ip.open(ipStreamAddress)) {
+        std::cout << "error opening ip video stream" << std::endl;
+        return -1;
+    }
+    
     
     std::cout << "after opening video stream" << std::endl;
 
@@ -171,13 +179,6 @@ int main(int argc, char** argv) {
     
     cURLpp::Cleanup myCleanup;
     
-    const std::string ipStreamAddress = "http://192.168.2.30/video.mjpg";
-    // Capture default webcam feed
-    cv::VideoCapture video_cap_ip;
-    if(!video_cap_ip.open(ipStreamAddress)) {
-        std::cout << "error opening ip video stream" << std::endl;
-        return -1;
-    }
 
     // Stream video
     for(;;) {
@@ -189,9 +190,16 @@ int main(int argc, char** argv) {
             perror ("Failed to acquire write lock on next video frame.");
         }
        
-        video_cap >> video_frame_buffer[cur_frame_i].color_frame; 
+        
+        video_cap.grab();
+        video_cap_ip.grab();
+        video_cap_ip.grab();
+        video_cap_ip.grab();
+        video_cap_ip.grab();
+        video_cap.retrieve(
+                video_frame_buffer[cur_frame_i].color_frame); 
    
-        video_cap_ip >> video_frame_buffer[cur_frame_i].color_ip_frame;
+        video_cap_ip.retrieve(video_frame_buffer[cur_frame_i].color_ip_frame);
         //if (!video_cap_ip.read(fromIP)) {
         //   std::cout << "no frame" << std::endl;
         //    cv::waitKey();
