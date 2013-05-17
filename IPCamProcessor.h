@@ -23,7 +23,10 @@ class IPCamProcessor : public FrameProcessor {
                         cv::Scalar(0))),
             _ip_center_x(0), _ip_center_y(0),
             _ip_center_step(_frame_width/15), 
-            _ip_radius(_frame_width/5),
+            _ip_radius(_frame_width/7),
+            _ip_moving_x_ctr(0),
+            _ip_moving_y_ctr(0),
+            _ip_ctr(5),
    _motion_loc_blob_thresh(motion_loc_blob_thresh) {
                 int rc = 0;
                 if( (rc = pthread_rwlock_init(&_last_pair_lock, 
@@ -48,7 +51,9 @@ class IPCamProcessor : public FrameProcessor {
         // Maximum amount the center of object of the ip camera can move by
         int _ip_center_step;
         int _ip_radius;
-
+        int _ip_moving_x_ctr;
+        int _ip_moving_y_ctr;
+        int _ip_ctr;
         // Homography matrix
         // cv::Mat _H;
         MotionLocBlobThresh* _motion_loc_blob_thresh;

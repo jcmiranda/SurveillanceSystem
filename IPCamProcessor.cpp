@@ -147,9 +147,14 @@ bool IPCamProcessor::processFrame() {
                 _ip_center_y = max(_ip_center_y - _ip_center_step, ip_centery);
         }
 
+        if(_ip_moving_x_ctr > 0)
+            _ip_moving_x_ctr--;
+        if(_ip_moving_y_ctr > 0)
+            _ip_moving_y_ctr--;
+
 // http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?&move=home
         // Want to move camera to re center
-        if (abs(_ip_center_x - _frame_width/2) > _ip_radius) {
+        if (abs(_ip_center_x - _frame_width/2) > _ip_radius && _ip_moving_x_ctr == 0) {
             cURLpp::Easy myRequest;
             std::stringstream result;
             if(_ip_center_x - _frame_width/2 < 0) {
@@ -157,13 +162,14 @@ bool IPCamProcessor::processFrame() {
                         cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=left"));
                 std::cout << "left" << std::endl;
             } else {
-                myRequest.setOpt(cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=right"));
+                    myRequest.setOpt(cURLpp::Options::Url("http://192.168.2.30/cgi-bin/camctrl/camctrl.cgi?move=right"));
                 std::cout << "right" << std::endl;
             }
             myRequest.setOpt(cURLpp::Options::WriteStream(&result));
             myRequest.perform();                    
+            _ip_moving_x_ctr = _ip_ctr;
 
-        } else if (abs(_ip_center_y - _frame_height/2) > _ip_radius) {
+        } else if (abs(_ip_center_y - _frame_height/2) > _ip_radius && _ip_moving_y_ctr == 0) {
             cURLpp::Easy myRequest;
             std::stringstream result;
             if(_ip_center_y - _frame_height/2 < 0) {
@@ -175,7 +181,7 @@ bool IPCamProcessor::processFrame() {
             }
             myRequest.setOpt(cURLpp::Options::WriteStream(&result));
             myRequest.perform();                    
-
+            _ip_moving_y_ctr = _ip_ctr;
         }
         
         cv::circle(img_matches, cv::Point(_ip_center_x + _frame_width,
