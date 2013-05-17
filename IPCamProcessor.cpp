@@ -78,10 +78,22 @@ bool IPCamProcessor::processFrame() {
     cvb::CvBlobs motion_blobs; 
     _motion_loc_blob_thresh->getLastMotionBlobs(&motion_blobs);
 
+    int minx = 0;
+    int miny = 0;
+    int maxx = 0;
+    int maxy = 0;
+
     for (cvb::CvBlobs::const_iterator it=motion_blobs.begin(); it!=motion_blobs.end(); ++it)
     {
         std::cout << "Blob #" << it->second->label << 
             ": Area=" << it->second->area << std::endl;
+        minx = (int) it->second->minx;
+        miny = (int) it->second->miny;
+        maxx = (int) it->second->maxx;
+        maxy = (int) it->second->maxy;
+        std::cout << "Blob #" << it->second->label << 
+            ": X" << minx << " " << maxx << " Y" <<
+            miny << " " << maxy << std::endl;
     }
 
     int rc = 0;
