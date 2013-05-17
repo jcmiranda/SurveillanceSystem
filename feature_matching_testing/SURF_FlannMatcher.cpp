@@ -16,6 +16,8 @@ using namespace cv;
 
 void readme();
 
+// g++ SURF_FlannMatcher.cpp -o output -L/opt/local/lib -lopencv_core -lopencv_highgui -lopencv_video -lopencv_features2d -lopencv_nonfree -lopencv_calib3d -I/opt/local/include -Wall `pkg-config opencv --libs`
+
 /**
  * @function main
  * @brief Main function
