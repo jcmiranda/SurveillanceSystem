@@ -24,7 +24,7 @@ const static int FRAME_WIDTH = 352;
 const static int FRAME_BUFLEN = 100;
 
 // Number of frames per background
-const static int FRAMES_PER_BGD = 15;
+const static int FRAMES_PER_BGD = 20;
 
 // The index to which the current frame is being written
 static int cur_frame_i = 0;
@@ -64,13 +64,6 @@ int main(int argc, char** argv) {
 		perror("Can not set frame width and height");
 	}
     
-    const std::string ipStreamAddress = "http://192.168.2.30/video.mjpg";
-    // Capture default webcam feed
-    cv::VideoCapture video_cap_ip;
-    if(!video_cap_ip.open(ipStreamAddress)) {
-        std::cout << "error opening ip video stream" << std::endl;
-        return -1;
-    }
     
     std::cout << "after opening video stream" << std::endl;
 
@@ -145,6 +138,14 @@ int main(int argc, char** argv) {
 	// cv::namedWindow("livecolor", 1);	
     
     cURLpp::Cleanup myCleanup;
+    
+    const std::string ipStreamAddress = "http://192.168.2.30/video.mjpg";
+    // Capture default webcam feed
+    cv::VideoCapture video_cap_ip;
+    if(!video_cap_ip.open(ipStreamAddress)) {
+        std::cout << "error opening ip video stream" << std::endl;
+        return -1;
+    }
 
     // Stream video
     for(;;) {
@@ -159,15 +160,15 @@ int main(int argc, char** argv) {
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
    
         cv::Mat fromIP;
-        if (!video_cap_ip.read(fromIP)) {
-            std::cout << "no frame" << std::endl;
-            cv::waitKey();
-        }
+        video_cap_ip >> fromIP;
+        //if (!video_cap_ip.read(fromIP)) {
+        //   std::cout << "no frame" << std::endl;
+        //    cv::waitKey();
+        //}
         
         //cv::resize(fromIP, 
         //        fromIP,
         //        cv::Size(FRAME_WIDTH, FRAME_HEIGHT));
-        cvtColor(fromIP, fromIP, CV_BGR2GRAY);
 
         cv::Mat color_frame;
         (video_frame_buffer[cur_frame_i].frame).copyTo(color_frame);
@@ -196,8 +197,9 @@ int main(int argc, char** argv) {
         //hconcat(toDraw,
         //        y_frame_with_blobs,
         //        toDraw);
-        //std::cout << "IP: " << fromIP.size() << std::endl;
-        //std::cout << "prob mask: " << prob_mask.size() << std::endl;
+        // std::cout << "IP: " << fromIP.size() << std::endl;
+        // std::cout << "prob mask: " << prob_mask.size() << std::endl;
+        cvtColor(fromIP, fromIP, CV_BGR2GRAY);
         hconcat(toDraw, fromIP, toDraw);
  
         cv::imshow("livefeed", toDraw);

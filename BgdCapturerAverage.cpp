@@ -44,7 +44,7 @@ bool BgdCapturerAverage::updateBgd() {
 
 bool BgdCapturerAverage::addFrameToBgd() {
     VideoFrame_t& this_frame = (*_frame_buffer)[_cur_frame_i];
-    
+   
     // Copy frame to buffer of bgd frames 
     (this_frame.frame).copyTo(_frames_for_bgd[_bgd_frame_i]);
     // Increment index of where to write into bgd buffer
