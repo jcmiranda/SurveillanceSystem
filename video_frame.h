@@ -9,6 +9,9 @@
 typedef struct VideoFrame {
     // Image data associated with this frame 
     cv::Mat frame;    
+    // Image data associated with ip camera frame for this
+    // iteration
+    cv::Mat ip_frame;
     // Time of frame capture 
     time_t timestamp;
     // Lock for data within this videoframe (timestamp and

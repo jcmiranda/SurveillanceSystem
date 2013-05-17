@@ -75,6 +75,10 @@ int main(int argc, char** argv) {
         video_frame_buffer[i].frame = 
             cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
         
+        // Initialize frame to empty frame of correct size
+        video_frame_buffer[i].ip_frame = 
+            cv::Mat(FRAME_HEIGHT, FRAME_WIDTH, CV_8UC1, cv::Scalar(0));
+        
         // Empty timestamp
         video_frame_buffer[i].timestamp = time_t();
         
@@ -159,8 +163,7 @@ int main(int argc, char** argv) {
        
         video_cap >> video_frame_buffer[cur_frame_i].frame; 
    
-        cv::Mat fromIP;
-        video_cap_ip >> fromIP;
+        video_cap_ip >> video_frame_buffer[cur_frame_i].ip_frame;
         //if (!video_cap_ip.read(fromIP)) {
         //   std::cout << "no frame" << std::endl;
         //    cv::waitKey();
@@ -199,8 +202,9 @@ int main(int argc, char** argv) {
         //        toDraw);
         // std::cout << "IP: " << fromIP.size() << std::endl;
         // std::cout << "prob mask: " << prob_mask.size() << std::endl;
-        cvtColor(fromIP, fromIP, CV_BGR2GRAY);
-        hconcat(toDraw, fromIP, toDraw);
+        cvtColor(video_frame_buffer[cur_frame_i].ip_frame, 
+                video_frame_buffer[cur_frame_i].ip_frame, CV_BGR2GRAY);
+        hconcat(toDraw, video_frame_buffer[cur_frame_i].ip_frame, toDraw);
  
         cv::imshow("livefeed", toDraw);
         //output_video.write(color_frame);
