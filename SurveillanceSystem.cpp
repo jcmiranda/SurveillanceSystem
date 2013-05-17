@@ -14,7 +14,6 @@
 #include "BgdCapturerAverage.h"
 #include "MotionLocBlobThresh.h"
 #include "cvblob.h"
-#include "IPCamProcessor.h"
 
 // Height and width of frame in pixels
 const static int FRAME_HEIGHT = 240;
